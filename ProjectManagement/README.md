@@ -13,7 +13,7 @@
 - May 27 - July 20 (8-Weeks)
 
 ## Meeting
-- Meets twice a week: Monday and Thursday at 10:00 a.m.
+- Meets twice a week: Monday and Thursday at 11:00 a.m. -- 12:00 p.m.
 - For [an effective and efficient meeting](https://www.condecosoftware.com/blog/meeting-length/#:~:text=Deciding%20on%20meeting%20length), the meeting will not exceed 60 minutes unless necessary.
 - The meeting will conduct the following structure:
   1. The student describes the progress including anything the student has learned after the past meeting. 20 minutes.

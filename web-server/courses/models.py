@@ -1,0 +1,45 @@
+# courses/models.py
+from django.db import models
+from django.conf import settings
+
+class Course(models.Model):
+    """Model representing a course"""
+    name = models.CharField(max_length=200)
+    number = models.CharField(max_length=20)
+    term = models.CharField(max_length=50)
+    section = models.CharField(max_length=20)
+    department = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    active = models.BooleanField(default=True)
+    instructor = models.ForeignKey('courses.Instructor', on_delete=models.SET_NULL, null=True, blank=True, related_name='courses_as_instructor')
+    
+    def __str__(self):
+        return f"{self.number}: {self.name} ({self.term})"
+
+
+class Student(models.Model):
+    """Model representing a student"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student_profile', null=True, blank=True)
+    student_id = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=200)
+    preferred_name = models.CharField(max_length=200, blank=True, null=True)
+    courses = models.ManyToManyField(Course, related_name='students', blank=True)
+    
+    def __str__(self):
+        display_name = self.preferred_name if self.preferred_name else self.name
+        return f"{self.student_id}: {display_name}"
+
+
+class Instructor(models.Model):
+    """Model representing an instructor"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='instructor_profile', null=True, blank=True)
+    instructor_id = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=200)
+    preferred_name = models.CharField(max_length=200, blank=True, null=True)
+    department = models.CharField(max_length=100)
+    courses = models.ManyToManyField(Course, related_name='instructors', blank=True)
+    
+    def __str__(self):
+        display_name = self.preferred_name if self.preferred_name else self.name
+        return f"{self.instructor_id}: {display_name}"

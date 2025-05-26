@@ -1,0 +1,2455 @@
+openapi: 3.0.3
+info:
+  title: Grade Gator API
+  version: 1.0.0
+  description: API documentation for the Grade Gator application
+paths:
+  /api/assignments/:
+    get:
+      operationId: assignments_list
+      description: List all assignments
+      tags:
+      - assignments
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assignment'
+          description: ''
+    post:
+      operationId: assignments_create
+      description: Create a new assignment
+      tags:
+      - assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssignmentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+          description: ''
+  /api/assignments/{id}/:
+    get:
+      operationId: assignments_retrieve
+      description: Get details of a specific assignment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this assignment.
+        required: true
+      tags:
+      - assignments
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+          description: ''
+    put:
+      operationId: assignments_update
+      description: Update an existing assignment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this assignment.
+        required: true
+      tags:
+      - assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssignmentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+          description: ''
+    patch:
+      operationId: assignments_partial_update
+      description: Partially update an existing assignment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this assignment.
+        required: true
+      tags:
+      - assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAssignmentRequest'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+          description: ''
+    delete:
+      operationId: assignments_destroy
+      description: Delete an assignment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this assignment.
+        required: true
+      tags:
+      - assignments
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/auth-status/:
+    get:
+      operationId: auth_status_retrieve
+      description: Check if user is authenticated
+      tags:
+      - auth-status
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStatus'
+          description: ''
+  /api/courses/:
+    get:
+      operationId: courses_list
+      description: List all courses
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+          description: ''
+    post:
+      operationId: courses_create
+      description: Create a new course
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+  /api/courses/{id}/:
+    get:
+      operationId: courses_retrieve
+      description: Get details of a specific course
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+    put:
+      operationId: courses_update
+      description: Update an existing course
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+    patch:
+      operationId: courses_partial_update
+      description: Partially update an existing course
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseRequest'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+    delete:
+      operationId: courses_destroy
+      description: Delete a course
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/current-user/:
+    get:
+      operationId: current_user_retrieve
+      description: Get details of the currently authenticated user
+      tags:
+      - current-user
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  is_staff:
+                    type: boolean
+                  student:
+                    type: object
+                    nullable: true
+                  instructor:
+                    type: object
+                    nullable: true
+          description: ''
+  /api/feedback/:
+    get:
+      operationId: feedback_list
+      description: List all feedback items
+      tags:
+      - feedback
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Feedback'
+          description: ''
+    post:
+      operationId: feedback_create
+      description: Create a new feedback item
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+  /api/feedback/{id}/:
+    get:
+      operationId: feedback_retrieve
+      description: Get details of a specific feedback item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - feedback
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    put:
+      operationId: feedback_update
+      description: Update an existing feedback item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    patch:
+      operationId: feedback_partial_update
+      description: Partially update an existing feedback item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedbackRequest'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    delete:
+      operationId: feedback_destroy
+      description: Delete a feedback item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - feedback
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/grades/:
+    get:
+      operationId: grades_list
+      description: List all grades
+      tags:
+      - grades
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Grade'
+          description: ''
+    post:
+      operationId: grades_create
+      description: Create a new grade
+      tags:
+      - grades
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GradeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GradeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grade'
+          description: ''
+  /api/grades/{id}/:
+    get:
+      operationId: grades_retrieve
+      description: Get details of a specific grade
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this grade.
+        required: true
+      tags:
+      - grades
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grade'
+          description: ''
+    put:
+      operationId: grades_update
+      description: Update an existing grade
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this grade.
+        required: true
+      tags:
+      - grades
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GradeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GradeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grade'
+          description: ''
+    patch:
+      operationId: grades_partial_update
+      description: Partially update an existing grade
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this grade.
+        required: true
+      tags:
+      - grades
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGradeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGradeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGradeRequest'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grade'
+          description: ''
+    delete:
+      operationId: grades_destroy
+      description: Delete a grade
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this grade.
+        required: true
+      tags:
+      - grades
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/instructors/:
+    get:
+      operationId: instructors_list
+      description: List all instructors
+      tags:
+      - instructors
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instructor'
+          description: ''
+    post:
+      operationId: instructors_create
+      description: Create a new instructor
+      tags:
+      - instructors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstructorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InstructorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InstructorRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instructor'
+          description: ''
+  /api/instructors/{id}/:
+    get:
+      operationId: instructors_retrieve
+      description: Get details of a specific instructor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this instructor.
+        required: true
+      tags:
+      - instructors
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instructor'
+          description: ''
+    put:
+      operationId: instructors_update
+      description: Update an existing instructor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this instructor.
+        required: true
+      tags:
+      - instructors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstructorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InstructorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InstructorRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instructor'
+          description: ''
+    patch:
+      operationId: instructors_partial_update
+      description: Partially update an existing instructor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this instructor.
+        required: true
+      tags:
+      - instructors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInstructorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInstructorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInstructorRequest'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instructor'
+          description: ''
+    delete:
+      operationId: instructors_destroy
+      description: Delete an instructor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this instructor.
+        required: true
+      tags:
+      - instructors
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/register/:
+    get:
+      operationId: register_list
+      description: List all submissions
+      tags:
+      - register
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    student:
+                      type: integer
+                    assignment:
+                      type: integer
+                    submission_time:
+                      type: string
+                      format: date-time
+                    files:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          file:
+                            type: string
+                            format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    post:
+      operationId: register_create
+      description: Register a new user account. Only email and password are required
+        fields.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                password_confirmation:
+                  type: string
+                  format: password
+                username:
+                  type: string
+                  description: Optional. If not provided, will be generated from email
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                preferred_name:
+                  type: string
+                  description: Optional display name
+                is_student:
+                  type: boolean
+                  default: false
+                is_instructor:
+                  type: boolean
+                  default: false
+              required:
+              - email
+              - password
+              - password_confirmation
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  detail:
+                    type: object
+          description: ''
+  /api/register/{id}/:
+    get:
+      operationId: register_retrieve
+      description: Get details of a specific submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - register
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    put:
+      operationId: register_update
+      description: Update an existing submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - register
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                student:
+                  type: integer
+                  description: ID of the student uploading the submission
+                assignment:
+                  type: integer
+                  description: ID of the related assignment
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: List of files to upload
+              required:
+              - student
+              - assignment
+              - files
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    patch:
+      operationId: register_partial_update
+      description: Partially update an existing submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - register
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                student:
+                  type: integer
+                  description: ID of the student uploading the submission
+                assignment:
+                  type: integer
+                  description: ID of the related assignment
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: List of files to upload
+              required:
+              - student
+              - assignment
+              - files
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    delete:
+      operationId: register_destroy
+      description: Delete a submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - register
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+  /api/students/:
+    get:
+      operationId: students_list
+      description: List all students
+      tags:
+      - students
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'
+          description: ''
+    post:
+      operationId: students_create
+      description: Create a new student
+      tags:
+      - students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+  /api/students/{id}/:
+    get:
+      operationId: students_retrieve
+      description: Get details of a specific student
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+    put:
+      operationId: students_update
+      description: Update an existing student
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+    patch:
+      operationId: students_partial_update
+      description: Partially update an existing student
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentRequest'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+    delete:
+      operationId: students_destroy
+      description: Delete a student
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/submissions/:
+    get:
+      operationId: submissions_list
+      description: List all submissions
+      tags:
+      - submissions
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    student:
+                      type: integer
+                    assignment:
+                      type: integer
+                    submission_time:
+                      type: string
+                      format: date-time
+                    files:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          file:
+                            type: string
+                            format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    post:
+      operationId: submissions_create
+      description: Create a new submission
+      tags:
+      - submissions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                student:
+                  type: integer
+                  description: ID of the student uploading the submission
+                assignment:
+                  type: integer
+                  description: ID of the related assignment
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: List of files to upload
+              required:
+              - student
+              - assignment
+              - files
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+  /api/submissions/{id}/:
+    get:
+      operationId: submissions_retrieve
+      description: Get details of a specific submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    put:
+      operationId: submissions_update
+      description: Update an existing submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                student:
+                  type: integer
+                  description: ID of the student uploading the submission
+                assignment:
+                  type: integer
+                  description: ID of the related assignment
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: List of files to upload
+              required:
+              - student
+              - assignment
+              - files
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    patch:
+      operationId: submissions_partial_update
+      description: Partially update an existing submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                student:
+                  type: integer
+                  description: ID of the student uploading the submission
+                assignment:
+                  type: integer
+                  description: ID of the related assignment
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: List of files to upload
+              required:
+              - student
+              - assignment
+              - files
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+    delete:
+      operationId: submissions_destroy
+      description: Delete a submission
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  student:
+                    type: integer
+                  assignment:
+                    type: integer
+                  submission_time:
+                    type: string
+                    format: date-time
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: uri
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
+  /api/upload/rubric/:
+    post:
+      operationId: upload_rubric_create
+      tags:
+      - upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GradingRubricRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GradingRubricRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GradingRubric'
+          description: ''
+  /api/upload/submission/:
+    post:
+      operationId: upload_submission_create
+      tags:
+      - upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+components:
+  schemas:
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        assignment_id:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 200
+        grade_method:
+          oneOf:
+          - $ref: '#/components/schemas/GradeMethodEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        points:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        due_date:
+          type: string
+          format: date-time
+        release_date:
+          type: string
+          format: date
+        is_visible_to_students:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_manually_graded:
+          type: boolean
+        course:
+          type: integer
+      required:
+      - assignment_id
+      - course
+      - created_at
+      - due_date
+      - id
+      - name
+      - points
+      - release_date
+      - updated_at
+    AssignmentRequest:
+      type: object
+      properties:
+        assignment_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        grade_method:
+          oneOf:
+          - $ref: '#/components/schemas/GradeMethodEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        points:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        due_date:
+          type: string
+          format: date-time
+        release_date:
+          type: string
+          format: date
+        is_visible_to_students:
+          type: boolean
+        is_manually_graded:
+          type: boolean
+        course:
+          type: integer
+      required:
+      - assignment_id
+      - course
+      - due_date
+      - name
+      - points
+      - release_date
+    AuthStatus:
+      type: object
+      description: Serializer for authentication status responses
+      properties:
+        is_authenticated:
+          type: boolean
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          nullable: true
+      required:
+      - is_authenticated
+    BlankEnum:
+      enum:
+      - ''
+    Course:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        number:
+          type: string
+          maxLength: 20
+        term:
+          type: string
+          maxLength: 50
+        section:
+          type: string
+          maxLength: 20
+        department:
+          type: string
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        active:
+          type: boolean
+        instructor:
+          type: integer
+      required:
+      - created_at
+      - department
+      - id
+      - instructor
+      - name
+      - number
+      - section
+      - term
+      - updated_at
+    CourseRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        number:
+          type: string
+          minLength: 1
+          maxLength: 20
+        term:
+          type: string
+          minLength: 1
+          maxLength: 50
+        section:
+          type: string
+          minLength: 1
+          maxLength: 20
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+        active:
+          type: boolean
+        instructor:
+          type: integer
+      required:
+      - department
+      - instructor
+      - name
+      - number
+      - section
+      - term
+    Feedback:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        comment:
+          type: string
+        position:
+          type: string
+          description: Position reference in the submission
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        acknowledged_by_student:
+          type: boolean
+        grade:
+          type: integer
+      required:
+      - comment
+      - created_at
+      - grade
+      - id
+      - position
+    FeedbackRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+          minLength: 1
+        position:
+          type: string
+          minLength: 1
+          description: Position reference in the submission
+          maxLength: 100
+        acknowledged_by_student:
+          type: boolean
+        grade:
+          type: integer
+      required:
+      - comment
+      - grade
+      - position
+    Grade:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        score:
+          type: number
+          format: double
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+        grading_time:
+          type: string
+          format: date-time
+          readOnly: true
+        is_finalized:
+          type: boolean
+        submission:
+          type: integer
+        graded_by:
+          type: integer
+          nullable: true
+      required:
+      - grading_time
+      - id
+      - submission
+    GradeMethodEnum:
+      enum:
+      - POINTS
+      - PERCENT
+      - LETTER
+      - STANDARDS
+      type: string
+      description: |-
+        * `POINTS` - Points Based
+        * `PERCENT` - Percentage Based
+        * `LETTER` - Letter Grade
+        * `STANDARDS` - Standards Based
+    GradeRequest:
+      type: object
+      properties:
+        score:
+          type: number
+          format: double
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+        is_finalized:
+          type: boolean
+        submission:
+          type: integer
+        graded_by:
+          type: integer
+          nullable: true
+      required:
+      - submission
+    GradingRubric:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        submission_time:
+          type: string
+          format: date-time
+          readOnly: true
+        rubric_file:
+          type: string
+          format: uri
+          nullable: true
+        instructor:
+          type: integer
+        assignment:
+          type: integer
+      required:
+      - assignment
+      - id
+      - instructor
+      - submission_time
+    GradingRubricRequest:
+      type: object
+      properties:
+        rubric_file:
+          type: string
+          format: binary
+          nullable: true
+        instructor:
+          type: integer
+        assignment:
+          type: integer
+      required:
+      - assignment
+      - instructor
+    Instructor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        instructor_id:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 200
+        preferred_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        department:
+          type: string
+          maxLength: 100
+        user:
+          type: integer
+          nullable: true
+        courses:
+          type: array
+          items:
+            type: integer
+      required:
+      - courses
+      - department
+      - id
+      - instructor_id
+      - name
+    InstructorRequest:
+      type: object
+      properties:
+        instructor_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        preferred_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+        user:
+          type: integer
+          nullable: true
+        courses:
+          type: array
+          items:
+            type: integer
+      required:
+      - courses
+      - department
+      - instructor_id
+      - name
+    PatchedAssignmentRequest:
+      type: object
+      properties:
+        assignment_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        grade_method:
+          oneOf:
+          - $ref: '#/components/schemas/GradeMethodEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        points:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        due_date:
+          type: string
+          format: date-time
+        release_date:
+          type: string
+          format: date
+        is_visible_to_students:
+          type: boolean
+        is_manually_graded:
+          type: boolean
+        course:
+          type: integer
+    PatchedCourseRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        number:
+          type: string
+          minLength: 1
+          maxLength: 20
+        term:
+          type: string
+          minLength: 1
+          maxLength: 50
+        section:
+          type: string
+          minLength: 1
+          maxLength: 20
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+        active:
+          type: boolean
+        instructor:
+          type: integer
+    PatchedFeedbackRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+          minLength: 1
+        position:
+          type: string
+          minLength: 1
+          description: Position reference in the submission
+          maxLength: 100
+        acknowledged_by_student:
+          type: boolean
+        grade:
+          type: integer
+    PatchedGradeRequest:
+      type: object
+      properties:
+        score:
+          type: number
+          format: double
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+        is_finalized:
+          type: boolean
+        submission:
+          type: integer
+        graded_by:
+          type: integer
+          nullable: true
+    PatchedInstructorRequest:
+      type: object
+      properties:
+        instructor_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        preferred_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+        user:
+          type: integer
+          nullable: true
+        courses:
+          type: array
+          items:
+            type: integer
+    PatchedStudentRequest:
+      type: object
+      properties:
+        student_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        preferred_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        user:
+          type: integer
+          nullable: true
+        courses:
+          type: array
+          items:
+            type: integer
+    Student:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student_id:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 200
+        preferred_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        user:
+          type: integer
+          nullable: true
+        courses:
+          type: array
+          items:
+            type: integer
+      required:
+      - courses
+      - id
+      - name
+      - student_id
+    StudentRequest:
+      type: object
+      properties:
+        student_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        preferred_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        user:
+          type: integer
+          nullable: true
+        courses:
+          type: array
+          items:
+            type: integer
+      required:
+      - courses
+      - name
+      - student_id
+    Submission:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        uploaded_files:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmissionFile'
+          readOnly: true
+        submission_time:
+          type: string
+          format: date-time
+          readOnly: true
+        student:
+          type: integer
+        assignment:
+          type: integer
+      required:
+      - assignment
+      - id
+      - student
+      - submission_time
+      - uploaded_files
+    SubmissionFile:
+      type: object
+      properties:
+        file:
+          type: string
+          format: uri
+      required:
+      - file
+    SubmissionFileRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+    SubmissionRequest:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+          writeOnly: true
+        student:
+          type: integer
+        assignment:
+          type: integer
+      required:
+      - assignment
+      - student
+    User:
+      type: object
+      description: Serializer for the User model
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: Staff status
+          description: Designates whether the user can log into this admin site.
+        is_student:
+          type: boolean
+        is_instructor:
+          type: boolean
+        student_profile:
+          type: string
+          readOnly: true
+        instructor_profile:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - instructor_profile
+      - is_staff
+      - student_profile
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
+tags:
+- name: courses
+  description: Course operations
+- name: assignments
+  description: Assignment operations
+- name: grading
+  description: Grading operations
+- name: accounts
+  description: User account operations

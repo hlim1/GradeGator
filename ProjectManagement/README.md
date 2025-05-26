@@ -12,6 +12,17 @@
 ## Period
 - May 27 - July 20 (8-Weeks)
 
+## Technology
+
+### Programming Languages:
+- Python, Java, HTML, CSS, JavaScript, TypeScript
+
+### Cloud:
+- AWS (EC2, Lambda)
+
+### Version Control:
+- Git, GitHub
+
 ## Work Items
 
 ### Week 1

@@ -43,7 +43,8 @@
   - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
 - When learning the technologies, make sure you follow the examples and perform them by yourself to gain practical knowledge. Be ready to show the demo if asked.
   - AWS has a free tier that the user can experiment with without any cost.
-- Meeting with the former student(s) to learn how AWS and GitHub repo are structured. 
+- Meeting with the former student(s) to learn how AWS and GitHub repo are structured.
+- Only this week, we will skip Thursday's meeting. We will have our next meeting on Monday, June 2, 2025.
 
 ### Week 2
 

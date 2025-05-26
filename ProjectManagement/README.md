@@ -32,6 +32,8 @@
   - [EC2 Tutorial from AWS](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/tutorial-launch-my-first-ec2-instance.html)
   - [AWS Cloud Tutorial](https://www.w3schools.com/aws/aws_cloudessentials_ec2intro.php)
   - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+- When learning the technologies, make sure you follow the examples and perform them by yourself to gain practical knowledge. Be ready to show the demo if asked.
+  - AWS has a free tier that the user can experiment with without any cost.
 - Meeting with the former student to learn how AWS and GitHub repo are structured. 
 
 ### Week 2

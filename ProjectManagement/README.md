@@ -12,6 +12,14 @@
 ## Period
 - May 27 - July 20 (8-Weeks)
 
+## Meeting
+- Meets twice a week: Monday and Thursday at 10:00 a.m.
+- For [an effective and efficient meeting](https://www.condecosoftware.com/blog/meeting-length/#:~:text=Deciding%20on%20meeting%20length), the meeting will not exceed 60 minutes unless necessary.
+- The meeting will conduct the following structure:
+  1. The student describes the progress including anything the student has learned after the past meeting. 20 minutes.
+  2. Discussion. This step may be integrated with Step 1. The project advisor asks any questions related to the student's work. 30 minutes.
+  3. The student proposes items to work on until the next meeting. 10 minutes.
+
 ## Technology
 
 ### Programming Languages:

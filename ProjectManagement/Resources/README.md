@@ -13,4 +13,5 @@ GradeGator/
             |__StatusReport1.pdf
             |__StatusReport2.pdf
             |__FinalReport.pdf
+        |__Report (Template).docx
 ```

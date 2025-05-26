@@ -9,3 +9,5 @@ Download the file in a PDF format and submit it here with the following file nam
 Submit the report a day before the first meeting of the week.
 
 For example, if the week's first meeting is Monday, the report **must** be submitted by the end of Sunday.
+
+You can find the template with the instructions in `GradeGator/ProjectManagement/Resources/Report (Template).docx` file.

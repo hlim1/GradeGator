@@ -2,6 +2,16 @@
 
 # Summer 2025
 
+## Student(s)
+- Brandon Rivera (brrivera@davidson.edu)
+- Harsh Desai (hadesai@davidson.edu)
+
+## Project
+- Build an Online Grading System - GradeGator
+
+## Period
+- May 27 - July 20 (8-Weeks)
+
 ## Work Items
 
 ### Week 1

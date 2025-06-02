@@ -47,6 +47,19 @@
 - Meeting with the former student(s) to learn how AWS and GitHub repo are structured.
 
 ### Week 2
+- Access [Davidson AWS Organization Account](https://davidsonaws.awsapps.com/start#/)
+  - Use your Davidson credential to access the account.
+  - Click `Davidson-GradeGators->AWSAdministratorAccess` to access the main Dashboard.
+  - Check out S3 buckets.
+  - Check out Lambda functions.
+- Learn how to host a static website on S3.
+  - There is a bucket `gradegator-web-server` created for hosting the web server.
+- Connect the front end and the back end.
+  - As a professor, I want to create my account so I can access the features of the site.
+  - As a professor, I want to create a course so I can manage my assignments for the students.
+  - As a professor, I want to upload an assignment so I can publish the assignment to the students.
+  - As a professor, I want to upload the auto-grader so I can grade students' submitted assignments automatically.
+  - As a professor, I want to view the auto-graded result so I can manually assess the students' work.
 
 ### Week 3
 

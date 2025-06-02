@@ -60,6 +60,12 @@
   - As a professor, I want to upload an assignment so I can publish the assignment to the students.
   - As a professor, I want to upload the auto-grader so I can grade students' submitted assignments automatically.
   - As a professor, I want to view the auto-graded result so I can manually assess the students' work.
+- Online Posts to Read and Learn
+  - AWS recommends [AWS Amplify](https://aws.amazon.com/amplify/) for the full stack development. Go through the site and see how it can be implemented into our GradeGator system.
+  - GradeGator is a full stack development. Read following posts to learn about what a full stack development is.
+    - [What is Full Stack Development?](https://aws.amazon.com/what-is/full-stack-development/) by AWS.
+    - [Model–view–controller](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) from Wikipedia.
+    - [The Model View Controller Pattern – MVC Architecture and Frameworks Explained](https://www.freecodecamp.org/news/the-model-view-controller-pattern-mvc-architecture-and-frameworks-explained/) by Rafael D. Hernandez.
 
 ### Week 3
 

@@ -66,6 +66,9 @@
     - [What is Full Stack Development?](https://aws.amazon.com/what-is/full-stack-development/) by AWS.
     - [Model–view–controller](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) from Wikipedia.
     - [The Model View Controller Pattern – MVC Architecture and Frameworks Explained](https://www.freecodecamp.org/news/the-model-view-controller-pattern-mvc-architecture-and-frameworks-explained/) by Rafael D. Hernandez.
+- Helpful Online Resources for Learning Entity-Relationship (ER) Diagram:
+  - [What is an Entity Relationship Diagram (ERD)?](https://www.lucidchart.com/pages/er-diagrams) from Lucid Chart
+  - [Introduction of ER Model](https://www.geeksforgeeks.org/introduction-of-er-model/) 
 
 ### Week 3
 

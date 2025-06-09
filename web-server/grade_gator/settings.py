@@ -48,7 +48,7 @@ SECRET_KEY = 'django-insecure-#z1@s8feh6p5+4w_=hb!yux%=$3q!j)bta*2r!+&49hov-+h9b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1','18.219.168.117','18.188.140.218']
 
 
 # Application definition
@@ -106,16 +106,16 @@ WSGI_APPLICATION = 'grade_gator.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
+DATABASES = { 
+       'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'grade_gator'),
-        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),  # Empty string for local
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': 'Bransh05050',
+        'HOST': 'gradegator-psql.c7kq2myoy2j2.us-east-2.rds.amazonaws.com',
+        'PORT': '5432',
     }
-}
+   }
 
 
 # Password validation
@@ -173,12 +173,16 @@ AUTH_USER_MODEL = 'accounts.User'
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://18.219.168.117:3000',
+    'http://18.188.140.218:3000',
 ]
 
 # CORS settings - you already have some of these
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://18.219.168.117:3000",
+    "http://18.188.140.218:3000",
 ]
 
 # REST Framework settings update to use both session and token auth

@@ -1,11 +1,12 @@
 'use client'
 
-import { FaBook, FaCog, FaInfoCircle } from 'react-icons/fa';
+import { FaBook, FaCog, FaInfoCircle,FaSignOutAlt } from 'react-icons/fa';
 import { useUser } from '../contexts/UserContext';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import type { User } from '../../lib/api';
 import { useRouter } from 'next/navigation';
+import Link from "next/link";
 
 export default function Sidebar() {
   const { role, setRole } = useUser();
@@ -59,6 +60,12 @@ export default function Sidebar() {
             <FaInfoCircle />
             <span>Help center</span>
           </li>
+          <Link href="/logout" className="block">
+  		<li className="flex items-center gap-3 cursor-pointer text-gray-600 hover:text-green-600">
+    		<FaSignOutAlt />
+    		<span>Logout</span>
+  		</li>
+	</Link>
         </ul>
 
         {/* Profile */}

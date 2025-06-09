@@ -30,6 +30,13 @@ export default function Dashboard() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    
+     useEffect(() => {
+	    const user = sessionStorage.getItem("userData");
+    	if (!user) {
+     	 router.replace("/login");
+    	}
+     }, [router]);
 
     const fetchCourses = async () => {
         try {

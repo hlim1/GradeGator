@@ -66,8 +66,20 @@
     - [What is Full Stack Development?](https://aws.amazon.com/what-is/full-stack-development/) by AWS.
     - [Model–view–controller](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) from Wikipedia.
     - [The Model View Controller Pattern – MVC Architecture and Frameworks Explained](https://www.freecodecamp.org/news/the-model-view-controller-pattern-mvc-architecture-and-frameworks-explained/) by Rafael D. Hernandez.
+- Helpful Online Resources for Learning Entity-Relationship (ER) Diagram:
+  - [What is an Entity Relationship Diagram (ERD)?](https://www.lucidchart.com/pages/er-diagrams) from Lucid Chart
+  - [Introduction of ER Model](https://www.geeksforgeeks.org/introduction-of-er-model/) from GeeksforGeeks
 
 ### Week 3
+- Fix the course is visible to all students and instructors.
+- Fix the log-out logic. (done)
+- The front-end assignment communicates properly with AWS lambda and S3.
+  - When an assignment is created, S3 holds assignment files.
+  - Lambda communicates with the front-end.
+- Verify that AWS RDS (PostgreSQL) is correctly populated when new data is added using the front-end.
+  - There should be a way to query the database using SQL code.
+- Make rubric generation be done online using the UI instead of creating a file locally and uploading the zip file.
+- Don't Allow Students to delete or alter course settings (Change Student permissions).
 
 ### Week 4
 

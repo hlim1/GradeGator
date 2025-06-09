@@ -71,6 +71,14 @@
   - [Introduction of ER Model](https://www.geeksforgeeks.org/introduction-of-er-model/) from GeeksforGeeks
 
 ### Week 3
+- Fix the course is visible to all students and instructors.
+- Fix the log-out logic.
+- The front-end assignment communicates properly with AWS lambda and S3.
+  - When an assignment is created, S3 holds assignment files.
+  - Lambda communicates with the front-end.
+- Verify that AWS RDS (PostgreSQL) is correctly populated when new data is added using the front-end.
+  - There should be a way to query the database using SQL code.
+- Make rubric generation be done online using the UI instead of creating a file locally and uploading the zip file.
 
 ### Week 4
 

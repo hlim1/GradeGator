@@ -7,9 +7,6 @@ const API_URL = 'http://18.188.140.218:8000/api';
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   withCredentials: true, // This is crucial for sending/receiving cookies
-  headers: {
-    'Content-Type': 'application/json',
-  }
 });
 
 // Function to get access token safely
@@ -309,6 +306,7 @@ export const apiFunctions = {
   // Upload rubric file
   uploadRubric: async (formData: FormData): Promise<any> => {
     // Don't set Content-Type header - let the browser set it with boundary
+    console.log(formData instanceof FormData); // should print: true
     const response = await api.post('/upload/rubric/', formData);
     return response.data;
   },

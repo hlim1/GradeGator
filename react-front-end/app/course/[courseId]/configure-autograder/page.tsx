@@ -23,7 +23,7 @@ const NextPage: React.FC = () => {
       setAssignmentData(parsedData);
       console.log("Loaded assignment data:", parsedData); // Debug log
     }
-    
+
     if (storedInstructorId) {
       setInstructorId(parseInt(storedInstructorId, 10));
     }
@@ -57,6 +57,7 @@ const NextPage: React.FC = () => {
     }
 
     if (!instructorId) {
+      console.log("Current Instructor ID", instructorId);
       setErrorMessage("Instructor ID not found. Please try logging in again.");
       return;
     }

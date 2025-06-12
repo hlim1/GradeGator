@@ -33,7 +33,7 @@ class Student(models.Model):
 
 class Instructor(models.Model):
     """Model representing an instructor"""
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='instructor_profile', null=True, blank=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='instructor_profile', primary_key=True)
     instructor_id = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
     preferred_name = models.CharField(max_length=200, blank=True, null=True)

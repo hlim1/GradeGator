@@ -70,18 +70,23 @@ export default function CourseBlock({
       <p className="text-sm text-gray-400">{semester}</p>
 
       {/* Delete Button */}
-      {!showConfirm && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowConfirm(true);
-          }}
-          className="absolute bottom-2 right-2 text-black text-sm hover:text-red-600 z-20"
-          aria-label="Delete Course"
-        >
-          🗑️
-        </button>
-      )}
+      {/* Delete Button (only for instructors or admins) */}
+{typeof window !== 'undefined' &&
+  (() => {
+    const user = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    return (user?.is_instructor || user?.is_staff) && !showConfirm;
+  })() && (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setShowConfirm(true);
+      }}
+      className="absolute bottom-2 right-2 text-black text-sm hover:text-red-600 z-20"
+      aria-label="Delete Course"
+    >
+      🗑️
+    </button>
+)}
     </div>
   );
 }

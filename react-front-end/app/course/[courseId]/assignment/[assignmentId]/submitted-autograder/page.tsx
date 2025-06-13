@@ -22,7 +22,7 @@ export default function SubmittedAutograderPage() {
             Back to Course
           </button>
           <button
-            onClick={() => router.push(`/course/${courseId}/submitted-feedback`)}
+            onClick={() => router.push(`/course/${courseId}/assignment/${assignmentId}/submitted-feedback`)}
             className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
           >
             View Feedback

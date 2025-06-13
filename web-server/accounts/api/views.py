@@ -61,7 +61,7 @@ def current_user(request):
     
     # Add student info if available
     if hasattr(user, 'student_profile') and user.student_profile.exists():
-        student = user.student_profile.first()
+        student = user.student_profile
         data['student'] = {
             'id': student.id,
             'name': student.name,
@@ -141,7 +141,7 @@ def login_user(request):
         instructor_id = None
         
         if user.is_student and hasattr(user, 'student_profile'):
-            student = user.student_profile.first()
+            student = user.student_profile
             if student:
                 student_id = student.student_id
                 

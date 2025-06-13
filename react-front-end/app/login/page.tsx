@@ -44,7 +44,6 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-bl from-purple-500 to-blue-500">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-96 max-w-full mx-4">

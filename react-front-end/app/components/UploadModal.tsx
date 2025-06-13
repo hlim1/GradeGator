@@ -21,7 +21,7 @@ export default function UploadModal({ isOpen, onClose, assignmentName, assignmen
 
   // Safely access localStorage on the client side
   useEffect(() => {
-    const storedUserId = localStorage.getItem('userId');
+    const storedUserId = sessionStorage.getItem('userId');
     setUserId(storedUserId);
   }, []);
 

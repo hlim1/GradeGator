@@ -60,7 +60,7 @@ export default function UploadModal({ isOpen, onClose, assignmentName, assignmen
       console.log('Upload response:', response);
       
       onClose();
-      router.push(`/course/${courseId}/submitted-autograder`);
+      router.push(`/course/${courseId}/assignment/${assignmentId}/submitted-autograder`);
     } catch (error: any) {
       console.error('Error uploading file:', error);
       console.error('Error details:', error);

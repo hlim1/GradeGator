@@ -82,6 +82,17 @@
 - Don't Allow Students to delete or alter course settings (Change Student permissions). (Harsh)
 
 ### Week 4
+- Construct a full ER diagram referencing the PostgreSQL.
+  - Verify the ER diagram is correct.
+  - The relationship cardinalities should be specified.
+  - All attributes in the table should be visible, along with their types.
+- Fix course visibility issue.
+- Debug student submission.
+  - Submit the completed assignment, run autograder (lambda), and return the result.
+- Create a temporary session-limited token for the user.
+  - Create at the login time.
+  - Deletes either when the user logs out or remains idle for 20 minutes.
+  - If the token deletes due to the idleness of the user, the user will automatically log out.
 
 ### Week 5
 

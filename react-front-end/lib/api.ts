@@ -291,10 +291,9 @@ export const apiFunctions = {
     assignment: number 
   }): Promise<Submission> => {
     const formData = new FormData();
-    formData.append('submission_file', submissionData.submission_file);
+    formData.append('files', submissionData.submission_file);
     formData.append('student', submissionData.student.toString());
     formData.append('assignment', submissionData.assignment.toString());
-
     const response = await api.post<Submission>('/upload/submission/', formData);
     return response.data;
   },

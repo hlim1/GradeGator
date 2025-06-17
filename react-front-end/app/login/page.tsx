@@ -33,7 +33,7 @@ const LoginPage = () => {
         if (response.user.is_instructor) {
           sessionStorage.setItem("instructorId", response.user.id.toString());
         }
-
+        sessionStorage.setItem("userId",  response.user.id);
         sessionStorage.setItem("userData", JSON.stringify(response.user));
         router.push("/dashboard");
       }

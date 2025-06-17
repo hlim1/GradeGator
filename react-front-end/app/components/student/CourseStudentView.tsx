@@ -147,7 +147,7 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
                     <div className="flex items-center gap-2">
                       {getStatusBadge(assignment)}
                       <a 
-                        href={`/course/${course.id}/submitted-feedback`} 
+                        href={`/course/${course.id}/assignment/${assignment.id}/submitted-feedback`} 
                         className="text-blue-500 hover:text-blue-700 text-sm"
                       >
                         View Feedback

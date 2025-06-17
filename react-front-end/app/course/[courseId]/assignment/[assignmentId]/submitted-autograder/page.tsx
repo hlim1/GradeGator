@@ -2,10 +2,21 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function SubmittedAutograderPage() {
   const router = useRouter();
-  const courseId = window.location.pathname.split('/')[2];
+  const [courseId, setCourseId] = useState<string | null>(null);
+  const [assignmentId, setAssignmentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/');
+      setCourseId(parts[2]);
+      setAssignmentId(parts[4]);
+    }
+  }, []);
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">

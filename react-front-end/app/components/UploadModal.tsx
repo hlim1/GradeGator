@@ -54,13 +54,16 @@ export default function UploadModal({ isOpen, onClose, assignmentName, assignmen
         student: parseInt(userId),
         assignment: assignmentId
       };
-
-      // Submit the file
-      const response = await apiFunctions.createSubmission(submissionRequest);
+      
+      // Create a submission
+      const response = await apiFunctions.uploadSubmission(submissionRequest);
       console.log('Upload response:', response);
+      sessionStorage.setItem("submissionId", response.id.toString());
+      sessionStorage.setItem("courseId", courseId);
       
       onClose();
       router.push(`/course/${courseId}/assignment/${assignmentId}/submitted-autograder`);
+                  
     } catch (error: any) {
       console.error('Error uploading file:', error);
       console.error('Error details:', error);

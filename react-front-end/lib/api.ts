@@ -295,11 +295,7 @@ export const apiFunctions = {
     formData.append('student', submissionData.student.toString());
     formData.append('assignment', submissionData.assignment.toString());
 
-    const response = await api.post<Submission>('/upload/submission/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post<Submission>('/upload/submission/', formData);
     return response.data;
   },
 

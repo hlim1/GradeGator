@@ -92,8 +92,8 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 class SubmissionUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)
     serializer_class = SubmissionSerializer
-    autograded = False
     def post(self, request, *args, **kwargs):
+        autograded = False
         from assignments.models import Assignment
         print("All assignments:", list(Assignment.objects.all().values('id', 'name')))
 

@@ -71,23 +71,23 @@
   - [Introduction of ER Model](https://www.geeksforgeeks.org/introduction-of-er-model/) from GeeksforGeeks
 
 ### Week 3
-- Fix the course is visible to all students and instructors. (Brandon)
+- Fix the course is visible to all students and instructors. (Both)
 - Fix the log-out logic. (done)
 - The front-end assignment communicates properly with AWS lambda and S3. (Brandon)
-  - When an assignment is created, S3 holds assignment files.
-  - Lambda communicates with the front-end.
-- Verify that AWS RDS (PostgreSQL) is correctly populated when new data is added using the front-end. (Harsh)
+  - When an assignment is created, S3 holds assignment files. (done)
+  - Lambda communicates with the front-end. (not done)
+- Verify that AWS RDS (PostgreSQL) is correctly populated when new data is added using the front-end. (done)
   - There should be a way to query the database using SQL code.
 - Make rubric generation be done online using the UI instead of creating a file locally and uploading the zip file. (Both)
 - Don't Allow Students to delete or alter course settings (Change Student permissions). (Harsh)
 
 ### Week 4
-- Construct a full ER diagram referencing the PostgreSQL.
+- Construct a full ER diagram referencing the PostgreSQL. (done)
   - Verify the ER diagram is correct.
   - The relationship cardinalities should be specified.
   - All attributes in the table should be visible, along with their types.
-- Fix course visibility issue.
-- Debug student submission.
+- Fix course visibility issue. (Both)
+- Debug student submission. (not done)
   - Submit the completed assignment, run autograder (lambda), and return the result.
 - Create a temporary session-limited token for the user.
   - Create at the login time.

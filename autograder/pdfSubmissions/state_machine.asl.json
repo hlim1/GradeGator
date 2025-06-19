@@ -1,0 +1,117 @@
+{
+    "Comment": "Autograder Workflow with EC2 Grading",
+    "StartAt": "PrepareSubmission",
+    "States": {
+        "PrepareSubmission": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-2:337161759690:function:prepare-submission",
+                "Payload": {
+                    "bucket.$": "$.bucket",
+                    "key.$": "$.key",
+                    "submission_id.$": "$.submission_id"
+                }
+            },
+            "Next": "LaunchEC2ForGrading",
+            "Catch": [
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "SubmissionFailure"
+                }
+            ]
+        },
+        "LaunchEC2ForGrading": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-2:337161759690:function:launch-ec2-grading",
+                "Payload": {
+                    "bucket.$": "$.bucket",
+                    "key.$": "$.key",
+                    "submission_id.$": "$.submission_id"
+                }
+            },
+            "Next": "WaitForGrading",
+            "Catch": [
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "SubmissionFailure"
+                }
+            ]
+        },
+        "WaitForGrading": {
+            "Type": "Wait",
+            "Seconds": 300,
+            "Next": "CheckGradingStatus"
+        },
+        "CheckGradingStatus": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-2:337161759690:function:check-grading-status",
+                "Payload": {
+                    "submission_id.$": "$.submission_id"
+                }
+            },
+            "Next": "GradingStatusChoice",
+            "Catch": [
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "SubmissionFailure"
+                }
+            ]
+        },
+        "GradingStatusChoice": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.gradingStatus",
+                    "StringEquals": "COMPLETED",
+                    "Next": "UploadResults"
+                },
+                {
+                    "Variable": "$.gradingStatus",
+                    "StringEquals": "FAILED",
+                    "Next": "SubmissionFailure"
+                }
+            ],
+            "Default": "WaitForGrading"
+        },
+        "UploadResults": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-2:337161759690:function:upload-results",
+                "Payload": {
+                    "bucket": "gradedsubmissions",
+                    "submission_id.$": "$.submission_id"
+                }
+            },
+            "Next": "TerminateEC2Instance"
+        },
+        "TerminateEC2Instance": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-2:337161759690:function:terminate-ec2-instance",
+                "Payload": {
+                    "submission_id.$": "$.submission_id"
+                }
+            },
+            "End": true
+        },
+        "SubmissionFailure": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-2:337161759690:function:submission-failure",
+                "Payload": {
+                    "submission_id.$": "$.submission_id",
+                    "errorDetails.$": "$.errorDetails"
+                }
+            },
+            "End": true
+        }
+    }
+}

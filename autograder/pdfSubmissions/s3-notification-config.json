@@ -1,0 +1,8 @@
+{
+    "QueueConfigurations": [
+      {
+        "QueueArn": "arn:aws:sqs:us-east-2:337161759690:autograder-submission-queue",
+        "Events": ["s3:ObjectCreated:*"]
+      }
+    ]
+  }

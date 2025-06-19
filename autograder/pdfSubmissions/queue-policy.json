@@ -1,0 +1,11 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Principal": {
+            "Service": "s3.amazonaws.com"
+        },
+        "Action": "sqs:SendMessage",
+        "Resource": "arn:aws:sqs:us-east-2:337161759690:autograder-submission-queue"
+    }]
+}

@@ -31,11 +31,19 @@ class SubmissionSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         files_data = validated_data.pop('files', [])
+        assignment_id = validated_data.get('assignment').id
+        student_id = validated_data.get('student').user_id
+    
         submission = Submission.objects.create(**validated_data)
+    
+        submission_id = submission.id
+    
         for file in files_data:
+            original_name = file.name
+            new_name = f"{assignment_id}_{submission_id}_{student_id}_{original_name}"
+            file.name = new_name
             SubmissionFile.objects.create(submission=submission, file=file)
         return submission
-
 
 class GradingRubricSerializer(serializers.ModelSerializer):
     class Meta:

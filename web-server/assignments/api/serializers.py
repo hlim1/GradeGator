@@ -41,3 +41,15 @@ class GradingRubricSerializer(serializers.ModelSerializer):
     class Meta:
         model = GradingRubric
         fields = '__all__'
+
+    def create(self, validated_data):
+        uploaded_file = validated_data['rubric_file']
+        assignment_id = validated_data.get('assignment').id
+
+        print(assignment_id)
+        # Generate new filename
+        original_name = uploaded_file.name
+        new_name = f"{assignment_id}_{original_name}"
+        uploaded_file.name = new_name
+
+        return super().create(validated_data)

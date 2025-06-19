@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+cd /autograder/source
+
+# Copy student's code into the autograder directory. Also, prepend the
+# appropriate package information so that the autograder can correctly import
+# all student files.
+problems="EightDaysAWeek NumericTriangle NumberGame"
+for problem in $problems
+do
+    echo "package com.gradescope.dp01;" > /autograder/source/src/main/java/com/gradescope/dp01/"$problem".java
+    cat /autograder/submission/"$problem".java >> /autograder/source/src/main/java/com/gradescope/dp01/"$problem".java
+done
+
+# Compile the student's code with autograder code
+bash ./compile.sh
+
+if [ $? = 0 ]  # if compilation succeeded
+then
+    # Run the autograder code
+    bash ./run.sh > /autograder/results/results.json
+else
+    echo "{\"tests\": [{\"name\": \"Compilation failed\",
+            \"output\": \"Your submission failed to compile:\n  - is your submission named correctly?\n  - did you submit all the required files?\n  - are your method signatures correct?\",
+            \"score\": 0,
+            \"visibility\": \"visible\"}]}" > /autograder/results/results.json
+fi

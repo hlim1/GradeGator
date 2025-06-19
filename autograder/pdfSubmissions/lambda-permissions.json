@@ -1,0 +1,21 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket",
+                "sqs:SendMessage",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "arn:aws:s3:::ungradedsubmissions/*",
+                "arn:aws:sqs:us-east-2:337161759690:autograder-queue",
+                "arn:aws:logs:*:*:*"
+            ]
+        }
+    ]
+}

@@ -89,6 +89,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             /* ------------------------------------------------- */
             /* 2️⃣ Ensure tests exist and download them */
             /* ------------------------------------------------- */
+
             if (!assignmentExists(s3Client, assignmentId)) {
                 String msg = "No test suite found for " + assignmentName;
                 context.getLogger().log(msg);
@@ -97,7 +98,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             }
 
             context.getLogger().log("Downloading test framework for assignment: " + assignmentName);
-            downloadS3Directory(TEST_BUCKET, assignmentName, testsDir.toString());
+            downloadS3Directory(TEST_BUCKET, assignmentId, testsDir.toString());
 
             // Copy interface files to submission directory
             copyInterfaceFiles(testsDir, subDir, context);
@@ -188,7 +189,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             if (key.endsWith("/"))
                 continue; // skip pseudo‑dirs
 
-            String rel = key.substring(prefix.length());
+            String rel = key.substring(key.lastIndexOf("/") + 1);
             if (rel.startsWith("/"))
                 rel = rel.substring(1);
 

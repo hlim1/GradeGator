@@ -7,11 +7,14 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -59,6 +62,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
 
         // Extract assignment name from the filename
         String assignmentName = extractAssignmentName(sourceKey);
+        String assignmentId = assignmentName.split("_")[0];
         context.getLogger().log("Detected assignment: " + assignmentName);
 
         try {
@@ -85,7 +89,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             /* ------------------------------------------------- */
             /* 2️⃣ Ensure tests exist and download them */
             /* ------------------------------------------------- */
-            if (!assignmentExists(assignmentName)) {
+            if (!assignmentExists(s3Client, assignmentId)) {
                 String msg = "No test suite found for " + assignmentName;
                 context.getLogger().log(msg);
                 return uploadResult(sourceBucket, sourceKey,
@@ -196,10 +200,24 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
         }
     }
 
-    private boolean assignmentExists(String assignment) {
+    private boolean assignmentExists(AmazonS3 client, String assignmentId) {
         try {
-            String marker = assignment + "/tests/annotations/GradedTest.java";
-            return s3Client.doesObjectExist(TEST_BUCKET, marker);
+            String prefix = assignmentId + "_";
+            ListObjectsV2Request request = new ListObjectsV2Request()
+                .withBucketName(TEST_BUCKET)
+                .withPrefix(assignmentId);
+            
+            ListObjectsV2Result result = client.listObjectsV2(request);
+
+            for (S3ObjectSummary obj : result.getObjectSummaries()) {
+                String key = obj.getKey();
+                if (key.endsWith(".zip")) {
+                    System.out.println("Found autograder zip: " + key);
+                    return true;
+                }
+            }
+            
+            return false;
         } catch (Exception e) {
             return false;
         }

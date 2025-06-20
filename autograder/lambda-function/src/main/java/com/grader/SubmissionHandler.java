@@ -14,7 +14,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.List;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -46,6 +46,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
 
         // Create timestamped working directory
         tempDir = "/tmp/grading-" + System.currentTimeMillis();
+        Path unzipDir = null;
         Path subDir = Paths.get(tempDir, "submission");
         Path testsDir = Paths.get(tempDir, "tests");
         Path compDir = Paths.get(tempDir, "compiled");
@@ -62,7 +63,9 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
 
         // Extract assignment name from the filename
         String assignmentName = extractAssignmentName(sourceKey);
-        String assignmentId = assignmentName.split("_")[0];
+        String[] assignmentList = assignmentName.split("_");
+        String assignmentId = assignmentList[0];
+        String baseAssignment = assignmentList[assignmentList.length - 1];
         context.getLogger().log("Detected assignment: " + assignmentName);
 
         try {
@@ -89,25 +92,82 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             /* ------------------------------------------------- */
             /* 2️⃣ Ensure tests exist and download them */
             /* ------------------------------------------------- */
+            String autograderFileName = assignmentIdAutograder(assignmentId);
+            String autograderFileNameWithoutZip;
 
-            if (!assignmentExists(s3Client, assignmentId)) {
-                String msg = "No test suite found for " + assignmentName;
+            if (autograderFileName == null) {
+                String msg = "No autograder exists for assignment ID: " + assignmentId;
                 context.getLogger().log(msg);
                 return uploadResult(sourceBucket, sourceKey,
                         jsonError(msg), context, isZip);
+            } else {
+                context.getLogger().log("Autograder Found");
+
+                if (autograderFileName.endsWith(".zip")){
+                    context.getLogger().log("Autograder is a zip file. Stripping Extension");
+
+                    autograderFileNameWithoutZip = extractAssignmentName(autograderFileName);
+
+                    context.getLogger().log("Unzipping: " + autograderFileName);
+                    
+                    S3Object zipObject = s3Client.getObject(TEST_BUCKET, autograderFileName);
+                    InputStream zipInputStream = zipObject.getObjectContent();
+
+                    unzipDir = Paths.get(tempDir, "tests");
+                    Files.createDirectories(unzipDir);
+
+                    try (ZipInputStream zis = new ZipInputStream(zipInputStream)) {
+                        ZipEntry entry;
+                        while ((entry = zis.getNextEntry()) != null) {
+                            Path outputPath = unzipDir.resolve(entry.getName());
+
+                            if (entry.isDirectory()) {
+                                Files.createDirectories(outputPath);
+                            } else {
+                                // Ensure parent directories exist
+                                Files.createDirectories(outputPath.getParent());
+
+                                try (OutputStream os = new FileOutputStream(outputPath.toFile())) {
+                                    byte[] buffer = new byte[4096];
+                                    int len;
+                                    while ((len = zis.read(buffer)) > 0) {
+                                        os.write(buffer, 0, len);
+                                    }
+                                }
+                            }
+
+                            zis.closeEntry();
+                        }
+
+                        context.getLogger().log("Successfully unzipped autograder to: " + unzipDir.toString());
+                    } catch (IOException e) {
+                        context.getLogger().log("Failed to unzip autograder: " + e.getMessage());
+                    }
+                }
             }
 
-            context.getLogger().log("Downloading test framework for assignment: " + assignmentName);
-            downloadS3Directory(TEST_BUCKET, assignmentId, testsDir.toString());
+            Path expectedPath = unzipDir.resolve("tests/annotations/GradedTest.java");
+            if (!Files.exists(expectedPath)) {
+                String msg = "No test suite found at expected path: " + expectedPath;
+                context.getLogger().log(msg);
+                return uploadResult(sourceBucket, sourceKey, jsonError(msg), context, isZip);
+            }
+
+            context.getLogger().log("Test framework downloaded for assignment: " + assignmentName);
+
+            //since we changed the logic to download the zip contents and extract, there is no need to download again
+            
+            //downloadS3Directory(TEST_BUCKET, autograderFileNameWithoutZip, unzipDir.toString());
 
             // Copy interface files to submission directory
-            copyInterfaceFiles(testsDir, subDir, context);
+            Path testsRoot = unzipDir.resolve("tests");
+            copyInterfaceFiles(testsRoot, subDir, context);
 
             /* ------------------------------------------------- */
             /* 3️⃣ Compile and Run tests */
             /* ------------------------------------------------- */
             context.getLogger().log("Compiling code");
-            String compileResult = compileCode(sourceKey, assignmentName, context);
+            String compileResult = compileCode(sourceKey, baseAssignment, context);
             if (!"success".equals(compileResult)) {
                 return uploadResult(sourceBucket, sourceKey, compileResult, context, isZip);
             }
@@ -189,7 +249,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             if (key.endsWith("/"))
                 continue; // skip pseudo‑dirs
 
-            String rel = key.substring(key.lastIndexOf("/") + 1);
+            String rel = key.substring(prefix.length());
             if (rel.startsWith("/"))
                 rel = rel.substring(1);
 
@@ -201,26 +261,26 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
         }
     }
 
-    private boolean assignmentExists(AmazonS3 client, String assignmentId) {
+    private String assignmentIdAutograder(String assignmentId) {
         try {
             String prefix = assignmentId + "_";
             ListObjectsV2Request request = new ListObjectsV2Request()
                 .withBucketName(TEST_BUCKET)
-                .withPrefix(assignmentId);
-            
-            ListObjectsV2Result result = client.listObjectsV2(request);
+                .withPrefix(prefix);
+
+            ListObjectsV2Result result = s3Client.listObjectsV2(request);
 
             for (S3ObjectSummary obj : result.getObjectSummaries()) {
                 String key = obj.getKey();
                 if (key.endsWith(".zip")) {
                     System.out.println("Found autograder zip: " + key);
-                    return true;
+                    return key;
                 }
             }
-            
-            return false;
+
+            return null;
         } catch (Exception e) {
-            return false;
+            return null;
         }
     }
 

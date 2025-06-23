@@ -257,7 +257,23 @@ export const apiFunctions = {
     return response.data.filter(submission => submission.assignment === assignmentId);
   },
 
-  // Get student details
+  // Get autograder results for a specific assignment, and student
+  getGradingResults: async (assignmentId: number, studentId: number): Promise<Grading[]> => {
+    const response = await api.get<Grading[]>('/grading/notify/',  {
+      params: {
+        assignment: assignmentId,
+        student: studentId
+      }
+    });
+    return response.data.filter(submission => submission.assignment === assignmentId);
+  },
+
+  // Get student details// Get submissions
+  getSubmissions: async (): Promise<Submission[]> => {
+    const response = await api.get<Submission[]>('/submissions/');
+    return response.data;
+  },
+
   getStudentDetails: async (studentId: number): Promise<any> => {
     const response = await api.get(`/students/${studentId}/`);
     return response.data;

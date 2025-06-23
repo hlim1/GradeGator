@@ -95,6 +95,17 @@
   - If the token deletes due to the idleness of the user, the user will automatically log out.
 
 ### Week 5
+- Returning the result to the front-end.
+  - Decide on the details of the visualization of the result. For now, follow the style of Gradescope.
+    - Print `testName`, show the text in green if `passed` is `true`. Otherwise, red.
+  - Show the student submitted files.
+    - Add a tab that the user can click to view the submitted files. The user can click each file to view the code.
+- Visibility of the assignments and submissions.
+- Create a temporary session-limited token for the user.
+  - Create at the login time.
+  - Deletes either when the user logs out or remains idle for 20 minutes.
+  - If the token is deleted due to the idleness of the user, the user will automatically log out.
+- Thursday: Live technical demo.
 
 ### Week 6
 

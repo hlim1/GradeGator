@@ -2,6 +2,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .views import GradingResultView
 
 app_name = 'grading_api'
 
@@ -10,5 +11,6 @@ router.register(r'grades', views.GradeViewSet, basename='grade')
 router.register(r'feedback', views.FeedbackViewSet, basename='feedback')
 
 urlpatterns = [
+    path('api/grading/notify/', GradingResultView.as_view(), name='grading-notify'),
     path('', include(router.urls)),
 ]

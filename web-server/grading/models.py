@@ -25,3 +25,11 @@ class Feedback(models.Model):
     
     def __str__(self):
         return f"Feedback on {self.grade.submission.assignment}"
+
+class GradingResult(models.Model):
+    s3_folder = models.CharField(max_length=255)
+    result_data = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.s3_folder

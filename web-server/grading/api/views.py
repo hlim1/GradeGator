@@ -1,7 +1,11 @@
 # grading/api/views.py
 from rest_framework import viewsets
-from grading.models import Grade, Feedback
-from .serializers import GradeSerializer, FeedbackSerializer
+from grading.models import Grade, Feedback, GradingResult
+from .serializers import GradeSerializer, FeedbackSerializer, GradingResultSerializer
+from rest_framework.generics import GenericAPIView
+from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
+from rest_framework import status
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 @extend_schema_view(
@@ -35,3 +39,20 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     """
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
+
+@extend_schema(
+    request=GradingResultSerializer,
+    responses={201: GradingResultSerializer},
+    description="Endpoint for Lambda to send grading result for a submission"
+)
+class GradingResultView(GenericAPIView):
+    queryset = GradingResult.objects.all()
+    serializer_class = GradingResultSerializer
+    parser_classes = [JSONParser]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

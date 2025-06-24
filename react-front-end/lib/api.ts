@@ -270,7 +270,7 @@ export const apiFunctions = {
 
   // Get autograder results from a submission
   getGradingResults: async (submissionId: number): Promise<Grading> => {
-    const response = await api.get<Grading>('/grading/notify', {
+    const response = await api.get<Grading>('/grades/', {
       params: {
         submission: submissionId
       }

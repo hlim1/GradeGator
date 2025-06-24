@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
-from assignments.models import Submission
+from assignments.models import Assignment, Submission
+from courses.models import Student
 
 class Grade(models.Model):
     submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name='grade')
@@ -25,11 +26,3 @@ class Feedback(models.Model):
     
     def __str__(self):
         return f"Feedback on {self.grade.submission.assignment}"
-
-class GradingResult(models.Model):
-    s3_folder = models.CharField(max_length=255)
-    result_data = models.JSONField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.s3_folder

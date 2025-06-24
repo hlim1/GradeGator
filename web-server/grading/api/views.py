@@ -1,13 +1,10 @@
 # grading/api/views.py
 import json
 from rest_framework import viewsets
-from grading.models import Grade, Feedback, GradingResult
-from .serializers import GradeSerializer, FeedbackSerializer, GradingResultSerializer
-from rest_framework.generics import GenericAPIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from grading.models import Grade, Feedback
+from .serializers import GradeSerializer, FeedbackSerializer
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 @extend_schema_view(
@@ -41,54 +38,3 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     """
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
-
-@extend_schema(
-    request=GradingResultSerializer,
-    responses={201: GradingResultSerializer},
-    description="Endpoint for Lambda to send grading result for a submission"
-)
-class GradingResultView(GenericAPIView):
-    queryset = GradingResult.objects.all()
-    serializer_class = GradingResultSerializer
-    parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [AllowAny]
-    
-    def post(self, request, *args, **kwargs):
-        # Parse JSON string from form field
-        result_data_json = request.data.get('result_data')
-        try:
-            result_data = json.loads(result_data_json)
-        except json.JSONDecodeError:
-            return Response({'error': 'Invalid result_data JSON.'}, status=400)
-
-        file = request.FILES.get('file')
-        s3_folder = request.data.get('s3_folder')
-
-        if not all([file, result_data, s3_folder]):
-            return Response({'error': 'Missing required fields.'}, status=400)
-
-        # Build the serializer input dict
-        serializer_data = {
-            's3_folder': s3_folder,
-            'result_data': result_data,
-            'file': file
-        }
-
-        serializer = self.get_serializer(data=serializer_data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def get(self, request, *args, **kwargs):
-        assignment_id = request.query_params.get('assignment')
-        student_id = request.query_params.get('student')
-
-        queryset = self.get_queryset()
-        if assignment_id:
-            queryset = queryset.filter(assignment=assignment_id)
-        if student_id:
-            queryset = queryset.filter(student=student_id)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)

@@ -686,14 +686,18 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
 
             // Parse the test output to extract detailed error messages
             String parsedOutput = parseTestOutput(output, errorOutput);
+            String sanitizedOutput = parsedOutput
+                .replace("\\", "\\\\")  // escape backslashes first
+                .replace("\"", "\\\"")  // escape double quotes
+                .replace("\n", "\\n")   // escape newlines
+                .replace("\r", "\\r");  // optional: escape carriage returns
 
             if (exitCode != 0) {
-                return "{\"status\": \"test_failure\", \"output\": \"" +
-                        parsedOutput.replace("\"", "\\\"") + "\"}";
+                return "{\"status\": \"test_failure\", \"output\": \"" + sanitizedOutput + "\"}";
             }
 
             // Format the result as JSON
-            return "{\"status\": \"success\", \"output\": \"" + parsedOutput.replace("\"", "\\\"") + "\"}";
+            return "{\"status\": \"success\", \"output\": \"" + sanitizedOutput + "\"}";
         } catch (Exception e) {
             context.getLogger().log("Test execution exception: " + e.getMessage());
             StringWriter sw = new StringWriter();

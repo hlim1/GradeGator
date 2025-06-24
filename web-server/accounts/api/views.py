@@ -2,6 +2,8 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth import login
 from .serializers import UserSerializer, AuthStatusSerializer, LoginSerializer
@@ -168,3 +170,30 @@ def login_user(request):
         'success': False,
         'error': serializer.errors
     }, status=400)
+
+@extend_schema(
+    description="Logs out the user by blacklisting the refresh token",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'refresh': {'type': 'string', 'description': 'Refresh token to be blacklisted'}
+            }
+        }
+    },
+    responses={200: {'type': 'object', 'properties': {
+        'detail': {'type': 'string'}
+    }}},
+    tags=["accounts"]
+)
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Logged out successfully."}, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)

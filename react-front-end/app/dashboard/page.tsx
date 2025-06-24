@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -30,8 +30,20 @@ export default function Dashboard() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
-     useEffect(() => {
+    useEffect(() => {
+    // Fix: Ensure browser environment + delay to avoid hydration skip
+    if (typeof window !== 'undefined') {
+        const hasRefreshed = sessionStorage.getItem("hasRefreshedDashboard");
+        if (!hasRefreshed) {
+          console.log("Here Reload");
+          sessionStorage.setItem("hasRefreshedDashboard", "true");
+          setTimeout(() => {
+          window.location.reload();
+         }, 100); // Delay helps ensure hydration is complete
+       }
+     }
+   }, []);
+    useEffect(() => {
 	    const user = sessionStorage.getItem("userData");
     	if (!user) {
      	 router.replace("/login");

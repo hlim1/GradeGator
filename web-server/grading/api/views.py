@@ -49,10 +49,24 @@ class GradingResultView(GenericAPIView):
     queryset = GradingResult.objects.all()
     serializer_class = GradingResultSerializer
     parser_classes = [JSONParser]
-
+    permission_classes = [AllowAny]
+    
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, *args, **kwargs):
+        assignment_id = request.query_params.get('assignment')
+        student_id = request.query_params.get('student')
+
+        queryset = self.get_queryset()
+        if assignment_id:
+            queryset = queryset.filter(assignment=assignment_id)
+        if student_id:
+            queryset = queryset.filter(student=student_id)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

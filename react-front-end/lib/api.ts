@@ -276,7 +276,7 @@ export const apiFunctions = {
       }
     });
     return response.data;
-  };
+  },
 
 
   // Get student details// Get submissions

@@ -4,7 +4,8 @@ from rest_framework import viewsets
 from grading.models import Grade, Feedback
 from .serializers import GradeSerializer, FeedbackSerializer
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import viewsets, status
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 @extend_schema_view(
@@ -22,6 +23,53 @@ class GradeViewSet(viewsets.ModelViewSet):
     """
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
+
+    # Allow file uploads + form data
+    parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+
+        # 1) pull submission_id
+        submission_id = data.get('submission')
+        if not submission_id:
+            return Response({'error': 'submission ID required'}, status=400)
+
+        # 2) parse your JSON blob from the 'result_data' field
+        raw = data.get('result_data')
+        try:
+            result = json.loads(raw) if raw else {}
+        except json.JSONDecodeError:
+            return Response({'error': 'invalid result_data'}, status=400)
+
+        # 3) map result keys into Grade fields
+        raw_output = result.get('output', '')
+        start = raw_output.find('{')
+        if start != -1:
+            try:
+                nested = json.loads(raw_output[start:])
+            except json.JSONDecodeError:
+                nested = {}
+        else:
+            nested = {}
+
+        # 3.1) map into Grade fields
+        data['score']    = nested.get('total')
+        data['feedback'] = raw_output 
+
+        # 4) ensure the submission exists
+        try:
+            Submission.objects.get(id=submission_id)
+        except Submission.DoesNotExist:
+            return Response({'error': 'submission not found'}, status=404)
+
+        # hand off to the normal serializer/create logic
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),

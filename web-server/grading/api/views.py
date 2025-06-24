@@ -2,6 +2,7 @@
 import json
 from rest_framework import viewsets
 from grading.models import Grade, Feedback
+from assignments.models import Submission
 from .serializers import GradeSerializer, FeedbackSerializer
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser

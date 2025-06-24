@@ -56,7 +56,7 @@ class GradeViewSet(viewsets.ModelViewSet):
 
         # 3.1) map into Grade fields
         data['score']    = nested.get('total')
-        data['feedback'] = raw_output 
+        data['feedback'] = json.dumps(nested)
 
         # 4) ensure the submission exists
         try:
@@ -64,13 +64,21 @@ class GradeViewSet(viewsets.ModelViewSet):
         except Submission.DoesNotExist:
             return Response({'error': 'submission not found'}, status=404)
 
-        # hand off to the normal serializer/create logic
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        grade, created = Grade.objects.update_or_create(
+            submission_id=submission_id,
+            defaults={
+                'score': data['score'],
+                'feedback': data['feedback'],
+                'is_finalized': True,
+            }
+        )
 
+        # 6) serialize and return
+        serializer = self.get_serializer(grade)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
 
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),

@@ -11,6 +11,6 @@ router.register(r'grades', views.GradeViewSet, basename='grade')
 router.register(r'feedback', views.FeedbackViewSet, basename='feedback')
 
 urlpatterns = [
-    path('api/grading/notify/', GradingResultView.as_view(), name='grading-notify'),
+    path('grading/notify/', GradingResultView.as_view(), name='grading-notify'),
     path('', include(router.urls)),
 ]

@@ -1,7 +1,6 @@
 from django.db import models
 from django.conf import settings
-from assignments.models import Assignment, Submission
-from courses.models import Student
+from assignments.models import Submission
 
 class Grade(models.Model):
     submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name='grade')

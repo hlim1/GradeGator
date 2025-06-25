@@ -1,19 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { logoutUser } from "@/utils/logout";
 
 const LogoutPage = () => {
-  const router = useRouter();
-
   useEffect(() => {
-    // Clear session data
-    sessionStorage.removeItem("userData");
-    sessionStorage.removeItem("instructorId");
-
-    // Redirect to login
-    router.replace("/login");
-  }, [router]);
+    logoutUser(); // call the reusable logic
+  }, []);
 
   return (
     <div className="flex justify-center items-center h-screen">

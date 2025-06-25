@@ -35,7 +35,22 @@ const LoginPage = () => {
         }
         sessionStorage.setItem("userId",  response.user.id);
         sessionStorage.setItem("userData", JSON.stringify(response.user));
-        router.push("/dashboard");
+
+        const tokenRes = await fetch("http://18.188.140.218:8000/api/token/", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ username, password }),
+        });
+        console.log("Tokens here");
+        if (tokenRes.ok) {
+           const tokenData = await tokenRes.json();
+           localStorage.setItem("accessToken", tokenData.access);
+           localStorage.setItem("refreshToken", tokenData.refresh);
+        } else {
+           console.error("Failed to get JWT tokens");
+        }
+
+        window.location.href = "/dashboard";
       }
     } catch (err: any) {
       console.error("Error logging in:", err);

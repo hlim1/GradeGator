@@ -50,7 +50,7 @@ const LoginPage = () => {
            console.error("Failed to get JWT tokens");
         }
 
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (err: any) {
       console.error("Error logging in:", err);

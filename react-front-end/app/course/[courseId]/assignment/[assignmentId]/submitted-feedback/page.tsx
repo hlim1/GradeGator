@@ -1,44 +1,46 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Course, apiFunctions } from '@/lib/api';
-import { useEffect, useState } from 'react';
+import { apiFunctions } from '@/lib/api';
+
+interface TestResult {
+  testName: string;
+  passed: boolean;
+  input?: string;
+  expectedOutput?: string;
+  actualOutput?: string;
+}
+
+interface ParsedFeedback {
+  testResults: TestResult[];
+}
 
 export default function SubmittedFeedbackPage() {
   const router = useRouter();
+
   const [courseId, setCourseId] = useState<string | null>(null);
   const [assignmentId, setAssignmentId] = useState<string | null>(null);
-  const [grade, setGrade] = useState<Grading | null>(null);
-  const [parsedFeedback, setParsedFeedback] = useState<any | null>(null);
-  
+  const [grade, setGrade] = useState<any | null>(null);
+  const [parsedFeedback, setParsedFeedback] = useState<ParsedFeedback | null>(null);
+  const [submittedFileUrl, setSubmittedFileUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'results' | 'code'>('results');
+
   useEffect(() => {
     const fetchData = async () => {
-    if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined') return;
 
-    const parts = window.location.pathname.split('/');
-    const course = parts[2];
-    const assignment = parts[4];
+      const parts = window.location.pathname.split('/');
+      const course = parts[2];
+      const assignment = parts[4];
 
-    setCourseId(course);
-    setAssignmentId(assignment);
+      setCourseId(course);
+      setAssignmentId(assignment);
 
-    const userDataRaw = sessionStorage.getItem("userData");
-    let userData = null;
+      const rawSub = sessionStorage.getItem('submissionId');
+      const submissionId = rawSub ? parseInt(rawSub, 10) : null;
 
-    if (userDataRaw) {
       try {
-        userData = JSON.parse(userDataRaw);
-      } catch (err) {
-      console.error("Failed to parse userData:", err);
-      }
-    }
-
-
-    if (userData?.is_student) {
-      try {
-        const rawSub = sessionStorage.getItem("submissionId");
-        const submissionId = rawSub ? parseInt(rawSub, 10) : null;
         const res = await apiFunctions.getGradingResults(submissionId);
         setGrade(res);
 
@@ -51,57 +53,99 @@ export default function SubmittedFeedbackPage() {
               const parsed = JSON.parse(jsonPart);
               setParsedFeedback(parsed);
             } catch (err) {
-              console.error("Failed to parse feedback JSON:", err);
+              console.error('Failed to parse feedback JSON:', err);
               setParsedFeedback(null);
             }
-        } else {
-          setParsedFeedback(null);
+          }
         }
-      }
-    } catch (error: any) {
-      console.error("Error fetching grading results:", error);
-    }
-  }
-  };
 
-  fetchData();
+        if (res[0]?.submitted_file) {
+          setSubmittedFileUrl(res[0].submitted_file);
+        }
+      } catch (err) {
+        console.error('Error fetching grading results:', err);
+      }
+    };
+
+    fetchData();
   }, []);
-  
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Assignment Feedback</h1>
-        <div className="space-y-6">
-          <div className="border rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">Autograder Results</h2>
-            {parsedFeedback ? (
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>Total Tests: {parsedFeedback.total}</p>
-                <p>Passed: {parsedFeedback.passed ? 'Yes' : 'No'}</p>
-                {/* Add more fields if needed */}
-                <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">
-                  {JSON.stringify(parsedFeedback, null, 2)}
-                </pre>
-              </div>
-            ) : (
-              <p className="text-gray-600">No feedback yet.</p>
-            )}
-          </div>
-          <div className="border rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">Manual Feedback</h2>
-            <p className="text-gray-600">Instructor feedback will appear here when available.</p>
-            {/* Add manual feedback content here */}
-          </div>
-        </div>
-        <div className="mt-6">
+
+        {/* Tab switcher */}
+        <div className="flex mb-4 border-b">
           <button
-            onClick={() => router.push(`/course/${courseId}`)}
-            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+            className={`px-4 py-2 font-medium ${
+              activeTab === 'results' ? 'border-b-2 border-blue-500 text-blue-700' : 'text-gray-600'
+            }`}
+            onClick={() => setActiveTab('results')}
           >
-            Back to Course
+            Results
+          </button>
+          <button
+            className={`px-4 py-2 font-medium ${
+              activeTab === 'code' ? 'border-b-2 border-blue-500 text-blue-700' : 'text-gray-600'
+            }`}
+            onClick={() => setActiveTab('code')}
+          >
+            Code
           </button>
         </div>
+
+        {/* Render either the results or code tab */}
+        {activeTab === 'code' ? (
+          <div className="bg-gray-100 p-4 rounded-md">
+            {submittedFileUrl ? (
+              <iframe
+                src={submittedFileUrl}
+                title="Submitted Code"
+                className="w-full h-[600px] border rounded"
+              />
+            ) : (
+              <p className="text-gray-600">No submitted file available.</p>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Autograder Results</h2>
+              {parsedFeedback?.testResults ? (
+                <div className="space-y-2">
+                  {parsedFeedback.testResults.map((test, index) => (
+                    <div
+                      key={index}
+                      className="border rounded-md px-4 py-3 text-sm font-medium shadow-sm"
+                    >
+                      <span
+                        className={`inline-block ${
+                          test.passed ? 'text-green-700' : 'text-red-700'
+                        }`}
+                      >
+                        <strong>{test.testName}</strong> {test.passed ? '✔️' : '❌'}{' '}
+                        {test.input ? `with ${test.input}` : ''} → {test.actualOutput ?? '?'} (expected: {test.expectedOutput ?? '?'})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No feedback available yet.</p>
+              )}
+            </div>
+
+            <div className="border rounded-lg p-4">
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">Manual Feedback</h2>
+              {grade && grade[0]?.manualFeedback ? (
+                <p className="text-gray-800">{grade[0].manualFeedback}</p>
+              ) : (
+                <p className="text-sm text-gray-600 italic">No manual feedback available.</p>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
-} 
+}

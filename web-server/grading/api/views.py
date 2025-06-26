@@ -63,16 +63,20 @@ class GradeViewSet(viewsets.ModelViewSet):
             Submission.objects.get(id=submission_id)
         except Submission.DoesNotExist:
             return Response({'error': 'submission not found'}, status=404)
-
+        print("FILES RECEIVED:", request.FILES)
+        uploaded_file = request.FILES.get('file')
+        print("Uploaded file:", uploaded_file)
         grade, created = Grade.objects.update_or_create(
             submission_id=submission_id,
             defaults={
                 'score': data['score'],
                 'feedback': data['feedback'],
                 'is_finalized': True,
+                'submitted_file': uploaded_file if uploaded_file else None,  # <-- here!
             }
         )
-
+        print("Grade.submitted_file:", grade.submitted_file)
+        print("Grade.submitted_file.url:", grade.submitted_file.url if grade.submitted_file else "None")
         # 6) serialize and return
         serializer = self.get_serializer(grade)
         return Response(

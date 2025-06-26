@@ -10,6 +10,7 @@ class Grade(models.Model):
                                 null=True, blank=True)
     grading_time = models.DateTimeField(auto_now=True)
     is_finalized = models.BooleanField(default=False)
+    submitted_file = models.FileField(upload_to='submitted_code/', null=True, blank=True)    
     
     def __str__(self):
         return f"Grade for {self.submission.student} on {self.submission.assignment}"

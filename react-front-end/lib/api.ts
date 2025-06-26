@@ -183,6 +183,11 @@ export const apiFunctions = {
     return response.data;
   },
 
+  getCoursesByUserId: async (userId: number): Promise<Course[]> => {
+    const response = await api.get<Course[]>(`/courses/by_user/?user_id=${userId}`);
+    return response.data;
+  },
+  
   // Get a specific course
   getCourse: async (id: number): Promise<Course> => {
     const response = await api.get<Course>(`/courses/${id}/`);

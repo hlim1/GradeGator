@@ -1,5 +1,6 @@
 # courses/api/views.py
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from courses.models import Course, Student, Instructor
 from .serializers import CourseSerializer, StudentSerializer, InstructorSerializer
@@ -21,7 +22,48 @@ class CourseViewSet(viewsets.ModelViewSet):
     """
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    # permission_classes = [IsAdminOrInstructor]
+    #permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def by_user(self, request):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({"error": "user_id query param required"}, status=400)
+
+        try:
+            instructor = Instructor.objects.get(user_id=user_id)
+            courses = instructor.courses.all()
+        except Instructor.DoesNotExist:
+            try:
+                student = Student.objects.get(user_id=user_id)
+                courses = student.courses.all()
+            except Student.DoesNotExist:
+                return Response({"courses": []})
+
+        serializer = self.get_serializer(courses, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def add_student(self, request, pk=None):
+        course = self.get_object()
+        student_id = request.data.get("student_id")
+        try:
+            student = Student.objects.get(pk=student_id)
+            course.students.add(student)
+            return Response({"status": "student added"})
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found"}, status=404)
+
+    @action(detail=True, methods=['post'])
+    def add_instructor(self, request, pk=None):
+        course = self.get_object()
+        instructor_id = request.data.get("instructor_id")
+        try:
+            instructor = Instructor.objects.get(pk=instructor_id)
+            course.instructors.add(instructor)
+            return Response({"status": "instructor added"})
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found"}, status=404)
 
 @extend_schema_view(
     list=extend_schema(description="List all students"),

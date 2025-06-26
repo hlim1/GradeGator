@@ -51,15 +51,16 @@ export default function Dashboard() {
      }, [router]);
 
     const fetchCourses = async () => {
-        try {
-            const fetchedCourses = await apiFunctions.getCourses();
-            setCourses(fetchedCourses);
-        } catch (error) {
-            console.error('Error fetching courses:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+       try {
+          const userId = sessionStorage.getItem("userId");
+          const fetchedCourses = await apiFunctions.getCoursesByUserId(userId);
+          setCourses(fetchedCourses);
+       } catch (error) {
+          console.error('Error fetching courses:', error);
+       } finally {
+          setIsLoading(false);
+       }
+   };
 
     useEffect(() => {
         fetchCourses();

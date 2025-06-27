@@ -74,7 +74,6 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     
     For students, only their own submissions are visible.
     """
-    queryset = Submission.objects.all()
     serializer_class = SubmissionSerializer
     
     def get_queryset(self):
@@ -87,13 +86,38 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             if student:
                 queryset = queryset.filter(student=student)
         
-        return queryset
+        assignment_id = self.request.query_params.get("assignment")
+        student_id = self.request.query_params.get("student")
+
+        if assignment_id:
+            queryset = queryset.filter(assignment_id=assignment_id)
+        if student_id:
+            queryset = queryset.filter(student_id=student_id)
+
+        return queryset.order_by('-id')
+
+
+    def list(self, request, *args, **kwargs):
+        assignment_id = request.query_params.get("assignment")
+        student_id = request.query_params.get("student")
+
+        # If both assignment and student are given, return only the latest submission
+        if assignment_id and student_id:
+            submission = self.get_queryset().first()
+            if submission:
+                serializer = self.get_serializer(submission)
+                return Response(serializer.data)
+            else:
+                return Response({"detail": "No submission found."}, status=404)
+
+        # Otherwise, return the full filtered list
+        return super().list(request, *args, **kwargs)
 
 class SubmissionUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)
     serializer_class = SubmissionSerializer
+
     def post(self, request, *args, **kwargs):
-        autograded = False
         from assignments.models import Assignment
         print("All assignments:", list(Assignment.objects.all().values('id', 'name')))
 
@@ -134,7 +158,7 @@ class SubmissionUploadView(GenericAPIView):
         files = request.FILES.getlist('files')
         if not files:
             print("No files found in request")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         # Process each file
         for file_obj in files:
@@ -183,13 +207,12 @@ class SubmissionUploadView(GenericAPIView):
                     submission.save()
                     
                     # Return success with job ID for tracking
-                    #return Response({
-                    #    'submission_id': submission.id,
-                    #    'job_id': job_id,
-                    #    'status': 'processing'
-                    #}, status=status.HTTP_202_ACCEPTED)
-
-                    autograded = True
+                    return Response({
+                        'submission_id': submission.id,
+                        'job_id': job_id,
+                        'status': 'processing'
+                    }, status=status.HTTP_202_ACCEPTED)
+                
                 except Exception as e:
                     # Log error and return failure response
                     print(f"Error triggering autograder: {str(e)}")
@@ -197,21 +220,11 @@ class SubmissionUploadView(GenericAPIView):
                         'error': 'Failed to trigger autograding process',
                         'detail': str(e)
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            if autograded:
-                return Response({
-                    'submission_id': submission.id,
-                    'job_id': job_id,
-                    'status': 'processing',
-                    'sqs_message_id': sqs_response.get('MessageId')
-                }, status=status.HTTP_202_ACCEPTED)
-            else:
-                return Response({
-                    'submission_id': submission.id,
-                    'status': 'saved',
-                    'note': 'No valid code files submitted for autograding'
-                }, status=status.HTTP_201_CREATED)
-
+        
+            # For unknown language or non-code submissions
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @extend_schema(
     request=GradingRubricSerializer,

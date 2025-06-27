@@ -3,6 +3,8 @@ from rest_framework import serializers
 from grading.models import Grade, Feedback
 
 class GradeSerializer(serializers.ModelSerializer):
+    submitted_file = serializers.FileField(read_only=True)
+
     class Meta:
         model = Grade
         fields = '__all__'

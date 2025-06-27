@@ -33,7 +33,7 @@ AWS_S3_FILE_OVERWRITE = False  # Prevents overwriting files with the same name
 AWS_DEFAULT_ACL = None  # Required to avoid permission errors
 AWS_S3_ADDRESSING_STYLE = "path"  # Ensures compatibility with boto3
 # AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-
+BACKEND_API_SECRET = 'django-insecure-#z1@s8feh6p5+4w_=hb!yux%=$3q!j)bta*2r!+&49hov-+h9b'
 # Default file storage
 #DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 STORAGES = {

@@ -142,6 +142,17 @@ export interface Submission {
   assignment: number;
 }
 
+interface Grading {
+  id: number;
+  score: number | null;
+  feedback: string | null;
+  grading_time: string;
+  is_finalized: boolean;
+  submission: number;
+  graded_by: number | null;
+}
+
+
 export interface SubmissionRequest {
   submission_file: File;
   student: number;
@@ -262,7 +273,33 @@ export const apiFunctions = {
     return response.data.filter(submission => submission.assignment === assignmentId);
   },
 
-  // Get student details
+  // Get autograder results from a submission
+  getGradingResults: async (submissionId: number): Promise<Grading> => {
+    const response = await api.get<Grading>('/grades/', {
+      params: {
+        submission: submissionId
+      }
+    });
+    return response.data;
+  },
+
+  //Get submission ID, for specific assignment and student
+  getSubmissionId: async (assignmentId: number, studentId: number): Promise<Submission> => {
+    const response = await api.get<Submission>('/submissions/', {
+      params: {
+        assignment: assignmentId,
+        student: studentId,
+      }
+    });
+    return response.data.id;
+  },
+
+  // Get student details// Get submissions
+  getSubmissions: async (): Promise<Submission[]> => {
+    const response = await api.get<Submission[]>('/submissions/');
+    return response.data;
+  },
+
   getStudentDetails: async (studentId: number): Promise<any> => {
     const response = await api.get(`/students/${studentId}/`);
     return response.data;

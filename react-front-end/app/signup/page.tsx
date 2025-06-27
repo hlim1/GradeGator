@@ -62,26 +62,72 @@ const SignUpPage = () => {
       if (!formData.username) {
         formData.username = formData.email.split('@')[0];
       }
-
+      console.log("Form data being sent:", formData);
       const response = await apiFunctions.register(formData as RegisterRequest);
       console.log("Registration successful:", response);
       
       // Redirect to login page after successful registration
-      router.push("/login");
-    } catch (err: any) {
-      console.error("Registration error:", err);
-      // Handle API error messages
-      if (err.response?.data) {
-        const errorMessages = Object.entries(err.response.data)
-          .map(([field, errors]: [string, any]) => `${field}: ${errors.join(', ')}`)
-          .join('\n');
-        setError(`Registration failed:\n${errorMessages}`);
-      } else {
-        setError("Registration failed. Please try again.");
-      }
-    }
-  };
+      // Auto-login after successful signup
+      const loginResponse = await apiFunctions.login({
+      username: formData.username!,
+      password: formData.password!
+     });
 
+      if (!loginResponse.success) {
+        setError("Account created, but auto-login failed. Please log in manually.");
+        return;
+     }
+      if (loginResponse.user) {
+        console.log("Auto-login successful");
+        console.log("User data:", loginResponse.user);
+     }
+  // Store user data in sessionStorage
+      if (loginResponse.user.is_instructor) {
+        sessionStorage.setItem("instructorId", loginResponse.user.id.toString());
+     }
+     sessionStorage.setItem("userId", loginResponse.user.id);
+     sessionStorage.setItem("userData", JSON.stringify(loginResponse.user));
+
+  // Get JWT tokens
+     const tokenRes = await fetch("http://18.188.140.218:8000/api/token/", {
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({
+      username: formData.username!,
+      password: formData.password!
+     }),
+   });
+
+   if (tokenRes.ok) {
+     const tokenData = await tokenRes.json();
+     localStorage.setItem("accessToken", tokenData.access);
+     localStorage.setItem("refreshToken", tokenData.refresh);
+   } else {
+     console.error("Failed to get JWT tokens after signup");
+   }
+
+  // Redirect to dashboard
+    window.location.href = "/dashboard";
+
+      } catch (err: any) {
+          console.error("Registration error:", err);
+    
+         if (err.response?.data) {
+           const errorMessages = Object.entries(err.response.data)
+             .map(([field, errors]: [string, any]) => {
+           if (Array.isArray(errors)) {
+              return `${field}: ${errors.join(', ')}`
+           } else {
+              return `${field}: ${errors}`
+           }
+           })
+          .join('\n');
+           setError(`Registration failed:\n${errorMessages}`);
+        } else {
+         setError("Registration failed. Please try again.");
+      }
+   }
+};
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-bl from-purple-500 to-blue-500">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-96 max-w-full mx-4">

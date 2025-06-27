@@ -20,27 +20,34 @@ export default function SubmittedFeedbackPage() {
   const router = useRouter();
 
   const [courseId, setCourseId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [assignmentId, setAssignmentId] = useState<string | null>(null);
   const [grade, setGrade] = useState<any | null>(null);
   const [parsedFeedback, setParsedFeedback] = useState<ParsedFeedback | null>(null);
   const [submittedFileUrl, setSubmittedFileUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'results' | 'code'>('results');
 
+  // Set IDs
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const parts = window.location.pathname.split('/');
+    const course = parts[2];
+    const assignment = parts[4];
+    const user = sessionStorage.getItem("userId");
+
+    setUserId(user);
+    setCourseId(course);
+    setAssignmentId(assignment);
+  }, []);
+
+  // Fetch data once IDs are ready
   useEffect(() => {
     const fetchData = async () => {
-      if (typeof window === 'undefined') return;
-
-      const parts = window.location.pathname.split('/');
-      const course = parts[2];
-      const assignment = parts[4];
-
-      setCourseId(course);
-      setAssignmentId(assignment);
-
-      const rawSub = sessionStorage.getItem('submissionId');
-      const submissionId = rawSub ? parseInt(rawSub, 10) : null;
+      if (!assignmentId || !userId) return;
 
       try {
+        const submissionId = await apiFunctions.getSubmissionId(assignmentId, userId);
         const res = await apiFunctions.getGradingResults(submissionId);
         setGrade(res);
 
@@ -56,6 +63,8 @@ export default function SubmittedFeedbackPage() {
               console.error('Failed to parse feedback JSON:', err);
               setParsedFeedback(null);
             }
+          } else {
+            setParsedFeedback(null);
           }
         }
 
@@ -68,7 +77,7 @@ export default function SubmittedFeedbackPage() {
     };
 
     fetchData();
-  }, []);
+  }, [assignmentId, userId]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">

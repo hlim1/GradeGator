@@ -42,6 +42,7 @@ export default function SubmittedFeedbackPage() {
 
       try {
         const res = await apiFunctions.getGradingResults(submissionId);
+        console.log(res);
         setGrade(res);
 
         if (res && res.length > 0 && res[0].feedback) {

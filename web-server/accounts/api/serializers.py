@@ -18,10 +18,10 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_student_profile(self, obj):
         """Get student profile if it exists"""
-        if hasattr(obj, 'student_profile') and obj.student_profile.exists():
-            student = obj.student_profile.first()
+        if hasattr(obj, 'student_profile'):
+            student = obj.student_profile
             return {
-                'id': student.id,
+                'id': student.user_id,
                 'student_id': student.student_id,
                 'name': student.name,
                 'preferred_name': student.preferred_name
@@ -30,10 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_instructor_profile(self, obj):
         """Get instructor profile if it exists"""
-        if hasattr(obj, 'instructor_profile') and obj.instructor_profile.exists():
-            instructor = obj.instructor_profile.first()
+        if hasattr(obj, 'instructor_profile'):
+            instructor = obj.instructor_profile
             return {
-                'id': instructor.id,
+                'id': instructor.user_id,
                 'instructor_id': instructor.instructor_id,
                 'name': instructor.name,
                 'preferred_name': instructor.preferred_name,
@@ -95,8 +95,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         validation_data = data.copy()
         if 'password_confirmation' in validation_data:
             validation_data.pop('password_confirmation')
-        
-        user = User(**validation_data)
+
+        user = User()        
+        user.email = data.get("email")
+        user.username = data.get("username", "")
         try:
             validate_password(data['password'], user)
         except exceptions.ValidationError as e:

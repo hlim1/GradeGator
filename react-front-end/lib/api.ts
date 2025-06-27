@@ -283,6 +283,16 @@ export const apiFunctions = {
     return response.data;
   },
 
+  //Get submission ID, for specific assignment and student
+  getSubmissionId: async (assignmentId: number, studentId: number): Promise<Submission> => {
+    const response = await api.get<Submission>('/submissions/', {
+      params: {
+        assignment: assignmentId,
+        student: studentId,
+      }
+    });
+    return response.data.id;
+  },
 
   // Get student details// Get submissions
   getSubmissions: async (): Promise<Submission[]> => {

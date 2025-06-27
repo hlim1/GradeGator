@@ -58,7 +58,6 @@ export default function UploadModal({ isOpen, onClose, assignmentName, assignmen
       // Create a submission
       const response = await apiFunctions.uploadSubmission(submissionRequest);
       console.log('Upload response:', response);
-      sessionStorage.setItem("submissionId", response.id.toString());
       sessionStorage.setItem("courseId", courseId);
       
       onClose();

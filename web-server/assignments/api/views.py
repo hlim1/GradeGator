@@ -74,7 +74,6 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     
     For students, only their own submissions are visible.
     """
-    queryset = Submission.objects.all()
     serializer_class = SubmissionSerializer
     
     def get_queryset(self):
@@ -87,7 +86,32 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             if student:
                 queryset = queryset.filter(student=student)
         
-        return queryset
+        assignment_id = self.request.query_params.get("assignment")
+        student_id = self.request.query_params.get("student")
+
+        if assignment_id:
+            queryset = queryset.filter(assignment_id=assignment_id)
+        if student_id:
+            queryset = queryset.filter(student_id=student_id)
+
+        return queryset.order_by('-id')
+
+
+    def list(self, request, *args, **kwargs):
+        assignment_id = request.query_params.get("assignment")
+        student_id = request.query_params.get("student")
+
+        # If both assignment and student are given, return only the latest submission
+        if assignment_id and student_id:
+            submission = self.get_queryset().first()
+            if submission:
+                serializer = self.get_serializer(submission)
+                return Response(serializer.data)
+            else:
+                return Response({"detail": "No submission found."}, status=404)
+
+        # Otherwise, return the full filtered list
+        return super().list(request, *args, **kwargs)
 
 class SubmissionUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)

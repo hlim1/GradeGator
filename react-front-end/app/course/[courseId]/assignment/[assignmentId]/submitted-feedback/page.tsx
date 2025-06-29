@@ -25,6 +25,7 @@ export default function SubmittedFeedbackPage() {
   const [grade, setGrade] = useState<any | null>(null);
   const [parsedFeedback, setParsedFeedback] = useState<ParsedFeedback | null>(null);
   const [submittedFileUrl, setSubmittedFileUrl] = useState<string | null>(null);
+  const [submittedCodeText, setSubmittedCodeText] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'results' | 'code'>('results');
 
   // Set IDs
@@ -52,8 +53,8 @@ export default function SubmittedFeedbackPage() {
         console.log(res);
         setGrade(res);
 
-        if (res && res.length > 0 && res[0].feedback) {
-          const feedbackStr = res[0].feedback;
+        if (res && res.length > 0 && res[1].feedback) {
+          const feedbackStr = res[1].feedback;
           const start = feedbackStr.indexOf('{');
           if (start !== -1) {
             try {
@@ -69,9 +70,10 @@ export default function SubmittedFeedbackPage() {
           }
         }
 
-        if (res[0]?.submitted_file) {
-          setSubmittedFileUrl(res[0].submitted_file);
+        if (res[1]?.submitted_code_text) {
+          setSubmittedCodeText(res[1].submitted_code_text);
         }
+
       } catch (err) {
         console.error('Error fetching grading results:', err);
       }
@@ -108,14 +110,12 @@ export default function SubmittedFeedbackPage() {
         {/* Render either the results or code tab */}
         {activeTab === 'code' ? (
           <div className="bg-gray-100 p-4 rounded-md">
-            {submittedFileUrl ? (
-              <iframe
-                src={submittedFileUrl}
-                title="Submitted Code"
-                className="w-full h-[600px] border rounded"
-              />
+            {submittedCodeText ? (
+              <pre className="whitespace-pre-wrap bg-white p-4 rounded shadow max-h-[600px] overflow-y-auto text-sm text-gray-800">
+                {submittedCodeText}
+              </pre>
             ) : (
-              <p className="text-gray-600">No submitted file available.</p>
+              <p className="text-gray-600">No submitted code available.</p>
             )}
           </div>
         ) : (

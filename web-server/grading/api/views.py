@@ -52,11 +52,12 @@ class GradeViewSet(viewsets.ModelViewSet):
 
         # 2) parse your JSON blob from the 'result_data' field
         raw = data.get('result_data')
+        print("🔍 Raw result_data received from Lambda:", raw)
         try:
             result = json.loads(raw) if raw else {}
         except json.JSONDecodeError:
             return Response({'error': 'invalid result_data'}, status=400)
-
+        print("✅ Parsed result_data:", result)
         # 3) map result keys into Grade fields
         raw_output = result.get('output', '')
         start = raw_output.find('{')
@@ -89,7 +90,8 @@ class GradeViewSet(viewsets.ModelViewSet):
 
         if uploaded_file:
             defaults['submitted_file'] = uploaded_file
-        
+            file_contents = uploaded_file.read().decode('utf-8') 
+            defaults['submitted_code_text'] = file_contents
         grade, created = Grade.objects.update_or_create(
             submission_id=submission_id,
             defaults=defaults

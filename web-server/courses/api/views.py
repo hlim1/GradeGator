@@ -24,6 +24,15 @@ class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
     #permission_classes = [IsAuthenticated]
 
+    @api_view(['GET'])
+    def get_course_by_code(request):
+        code = request.query_params.get('code')
+        course = Course.objects.filter(code=code).first()
+        if course:
+            return Response(CourseSerializer(course).data)
+
+        return Response({'error': 'Course not found'}, status=404)
+
     @action(detail=False, methods=['get'])
     def by_user(self, request):
         user_id = request.query_params.get('user_id')

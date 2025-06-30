@@ -32,18 +32,21 @@ class GradeViewSet(viewsets.ModelViewSet):
     #permission_classes = [LambdaSecretPermission]
     print("🔥 create(1) was triggered from Lambda")
 
-
     def list(self, request, *args, **kwargs):
         submission_id = request.query_params.get('submission')
         if submission_id:
+            print(f"🔎 Checking for grade on submission {submission_id}")
             try:
-                grade = Grade.objects.get(submission_id=submission_id)
+                grade = Grade.objects.get(submission_id=int(submission_id))
+                print("✅ Grade found")
             except Grade.DoesNotExist:
+                print("❌ Grade does not exist yet")
                 return Response({})
             serializer = self.get_serializer(grade)
             return Response(serializer.data)
         else:
             return super().list(request, *args, **kwargs)
+
     
     def initialize_request(self, request, *args, **kwargs):
         print("🔥 create(2) was triggered from Lambda")

@@ -41,13 +41,15 @@ export default function CreateCourseModal({ isOpen, onClose, onCourseCreated }: 
     setError(null);
 
     try {
+      const userId = sessionStorage.getItem('userId');
       const courseCode = generateUniqueCode();
       const courseData = {
         ...formData,
         term: `${formData.term} ${formData.year}`,
         code: courseCode
       };
-      await apiFunctions.createCourse(courseData);
+      const response = await apiFunctions.createCourse(courseData);
+      await apiFunctions.addUserCourse(userId, response.id);
       onClose();
       if (onCourseCreated) {
         onCourseCreated();

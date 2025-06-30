@@ -77,40 +77,33 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     serializer_class = SubmissionSerializer
     
     def get_queryset(self):
-        """Filter submissions by student if user is a student"""
         queryset = Submission.objects.all()
-        
-        # If user has student profile, only show their submissions
-        if hasattr(self.request.user, 'student_profile'):
-            student = self.request.user.student_profile.first()
-            if student:
-                queryset = queryset.filter(student=student)
-        
-        assignment_id = self.request.query_params.get("assignment")
-        student_id = self.request.query_params.get("student")
 
-        if assignment_id:
-            queryset = queryset.filter(assignment_id=assignment_id)
+        # Filter by student first
+        student_id = self.request.query_params.get("student")
         if student_id:
             queryset = queryset.filter(student_id=student_id)
 
-        return queryset.order_by('-id')
+        # Then filter by assignment
+        assignment_id = self.request.query_params.get("assignment")
+        if assignment_id:
+            queryset = queryset.filter(assignment_id=assignment_id)
 
+        # Order descending by ID to get latest submissions first
+        return queryset.order_by('-id')
 
     def list(self, request, *args, **kwargs):
         assignment_id = request.query_params.get("assignment")
         student_id = request.query_params.get("student")
 
-        # If both assignment and student are given, return only the latest submission
         if assignment_id and student_id:
-            submission = self.get_queryset().first()
+            submission = self.get_queryset().first()  # newest submission for that student and assignment
             if submission:
                 serializer = self.get_serializer(submission)
                 return Response(serializer.data)
             else:
                 return Response({"detail": "No submission found."}, status=404)
 
-        # Otherwise, return the full filtered list
         return super().list(request, *args, **kwargs)
 
 class SubmissionUploadView(GenericAPIView):

@@ -31,6 +31,20 @@ class GradeViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
     #permission_classes = [LambdaSecretPermission]
     print("🔥 create(1) was triggered from Lambda")
+
+
+    def list(self, request, *args, **kwargs):
+        submission_id = request.query_params.get('submission')
+        if submission_id:
+            try:
+                grade = Grade.objects.get(submission_id=submission_id)
+            except Grade.DoesNotExist:
+                return Response({})
+            serializer = self.get_serializer(grade)
+            return Response(serializer.data)
+        else:
+            return super().list(request, *args, **kwargs)
+    
     def initialize_request(self, request, *args, **kwargs):
         print("🔥 create(2) was triggered from Lambda")
         django_request = super().initialize_request(request, *args, **kwargs)
@@ -104,6 +118,7 @@ class GradeViewSet(viewsets.ModelViewSet):
             serializer.data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
         )
+
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),
     create=extend_schema(description="Create a new feedback item"),

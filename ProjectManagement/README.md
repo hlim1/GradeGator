@@ -108,6 +108,23 @@
 - Thursday: Live technical demo.
 
 ### Week 6
+- Implement "Settings" page for the course. On the page, there should be the following items:
+  - Edit Course information: Course name, number, semester, year, department.
+  - Configure autograder -- able to upload a new autograder file. This file will overwrite the existing one, if any, and compile.
+  - Manage submission release date, deadline, and late submission date.
+- Implement "Rubric" page for the course. On the page, there should be the following items:
+  - Create new rubric: Each rubric must include a description and the weight (score).
+  - Able to edit the existing rubric description and the weight.
+  - Able to remove the rubric.
+- Code display. The code view page shows collapsible options, where each option shows the submitted source file if clicked.
+- Change "Documents" to "Files" and make it visible to the students.
+- Implement the class roster page. On the page, there should be the following items:
+  - Shows the names of users.
+  - Shows the role of each user.
+  - Shows the email address of each user.
+  - Able to add a user using either option: Single user or batch using a csv file.
+- Design how the role-by-course should be implemented.
+  - Do we need an extra table(s) in the database, or can we utilize the existing ones and simply (maybe not so simple) modify the front-end? 
 
 ### Week 7
 

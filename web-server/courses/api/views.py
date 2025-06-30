@@ -24,6 +24,15 @@ class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
     #permission_classes = [IsAuthenticated]
 
+    @action(detail=False, methods=['get'], url_path='by-code')
+    def get_course_by_code(self, request):
+        code = request.query_params.get('code')
+        course = Course.objects.filter(code=code).first()
+        if course:
+            return Response({'id': course.id})
+
+        return Response({'error': 'Course not found'}, status=404)
+
     @action(detail=False, methods=['get'])
     def by_user(self, request):
         user_id = request.query_params.get('user_id')
@@ -44,26 +53,28 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
-    def add_student(self, request, pk=None):
+    def add_user(self, request, pk=None):
         course = self.get_object()
-        student_id = request.data.get("student_id")
-        try:
-            student = Student.objects.get(pk=student_id)
-            course.students.add(student)
-            return Response({"status": "student added"})
-        except Student.DoesNotExist:
-            return Response({"error": "Student not found"}, status=404)
+        user_id = request.data.get('user_id')
 
-    @action(detail=True, methods=['post'])
-    def add_instructor(self, request, pk=None):
-        course = self.get_object()
-        instructor_id = request.data.get("instructor_id")
+        if not user_id:
+            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Try to add as instructor first
         try:
-            instructor = Instructor.objects.get(pk=instructor_id)
+            instructor = Instructor.objects.get(user_id=user_id)
             course.instructors.add(instructor)
-            return Response({"status": "instructor added"})
+            return Response({'status': 'instructor added'})
         except Instructor.DoesNotExist:
-            return Response({"error": "Instructor not found"}, status=404)
+            pass
+
+        # Then try to add as student
+        try:
+            student = Student.objects.get(user_id=user_id)
+            course.students.add(student)
+            return Response({'status': 'student added'})
+        except Student.DoesNotExist:
+            return Response({'error': 'No student or instructor found for this user_id'}, status=status.HTTP_404_NOT_FOUND)
 
 @extend_schema_view(
     list=extend_schema(description="List all students"),

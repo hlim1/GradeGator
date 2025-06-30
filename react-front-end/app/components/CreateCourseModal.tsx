@@ -25,17 +25,31 @@ export default function CreateCourseModal({ isOpen, onClose, onCourseCreated }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function generateUniqueCode() {
+    const timestampPart = Date.now().toString(36).toUpperCase().slice(-3);
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomPart = '';
+    for (let i = 0; i < 3; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return timestampPart + randomPart;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
+      const userId = sessionStorage.getItem('userId');
+      const courseCode = generateUniqueCode();
       const courseData = {
         ...formData,
-        term: `${formData.term} ${formData.year}`
+        term: `${formData.term} ${formData.year}`,
+        code: courseCode
       };
-      await apiFunctions.createCourse(courseData);
+      const response = await apiFunctions.createCourse(courseData);
+      await apiFunctions.addUserCourse(userId, response.id);
       onClose();
       if (onCourseCreated) {
         onCourseCreated();

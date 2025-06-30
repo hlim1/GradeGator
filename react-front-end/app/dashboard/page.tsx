@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 import CourseBlock from '../components/CourseBlock';
 import CreateCourseModal from '../components/CreateCourseModal';
+import JoinCourseModal from '../components/JoinCourseModal';
 import { Course } from '@/lib/api';
 import { useUser } from '../contexts/UserContext';
 import { apiFunctions } from '@/lib/api';
@@ -28,6 +29,7 @@ export default function Dashboard() {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOption, setSortOption] = useState('name');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     useEffect(() => {
@@ -93,6 +95,10 @@ export default function Dashboard() {
 
     const handleCourseCreated = () => {
         fetchCourses(); // Refresh the course list
+    };
+
+    const handleCourseJoined = () => {
+      fetchCourses(); // Refresh the course list
     };
 
     if (isLoading) {
@@ -191,6 +197,23 @@ export default function Dashboard() {
                     isOpen={isCreateModalOpen}
                     onClose={() => setIsCreateModalOpen(false)}
                     onCourseCreated={handleCourseCreated}
+                />
+
+                {role === 'student' && (
+                    <div className="fixed bottom-4 right-4">
+                        <button 
+                            onClick={() => setIsJoinModalOpen(true)}
+                            className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-md"
+                        >
+                            Join a Course
+                        </button>
+                    </div>
+                )}
+
+                <JoinCourseModal 
+                    isOpen={isJoinModalOpen}
+                    onClose={() => setIsJoinModalOpen(false)}
+                    onCourseJoined={handleCourseJoined}
                 />
             </div>
         </div>

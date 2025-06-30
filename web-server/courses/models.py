@@ -14,6 +14,7 @@ class Course(models.Model):
     active = models.BooleanField(default=True)
     students = models.ManyToManyField('courses.Student', related_name='courses', blank=True)
     instructors = models.ManyToManyField('courses.Instructor', related_name='courses', blank=True)
+    code = models.CharField(max_length=20)
     
     def __str__(self):
         return f"{self.number}: {self.name} ({self.term})"

@@ -211,9 +211,24 @@ export const apiFunctions = {
     return response.data;
   },
 
+  checkCourse: async (courseCode: string): Promise<Course> => {
+    const response = await api.get<Course>('/courses/by-code/', {
+      params: { code: courseCode }
+    });
+    return response.data;
+  },
+
   // Update a course
   updateCourse: async (id: number, courseData: Partial<CourseRequest>): Promise<Course> => {
     const response = await api.patch<Course>(`/courses/${id}/`, courseData);
+    return response.data;
+  },
+
+  // Add user to a course
+  addUserCourse: async (userId: number, courseId: number): Promise<any> => {
+    const response = await api.post(`/courses/${courseId}/add_user/`, {
+      user_id: userId,
+    });
     return response.data;
   },
 

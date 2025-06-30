@@ -25,7 +25,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     #permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['get'], url_path='by-code')
-    def get_course_by_code(request):
+    def get_course_by_code(self, request):
         code = request.query_params.get('code')
         course = Course.objects.filter(code=code).first()
         if course:

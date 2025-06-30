@@ -8,9 +8,9 @@ interface JoinCourseModalProps {
   onCourseCreated?: () => void;
 }
 
-//interface CourseFormData extends Omit<Course, 'id' | 'created_at' | 'updated_at'> {
-//  year: string;
-//}
+interface CourseFormData {
+  code: string;
+}
 
 export default function CreateCourseModal({ isOpen, onClose, onCourseJoined }: JoinCourseModalProps) {
   const [formData, setFormData] = useState<CourseFormData>({
@@ -26,16 +26,15 @@ export default function CreateCourseModal({ isOpen, onClose, onCourseJoined }: J
     setError(null);
 
     try {
-      const courseData = formData.code;
-      const response = await apiFunctions.joinCourse(courseData);
+      const response = await apiFunctions.checkCourse(formData.code);
       if (response) {
         const userId = sessionStorage.getItem('userId');
-        apiFunctions.addUserCourse(userId);
-        };
-      }
-      onClose();
-      if (onCourseJoined) {
-        onCourseJoined();
+        if (!userId) throw new Error('User not logged in');
+        await apiFunctions.addUserCourse(userId, response.id);
+        onClose();
+        if (onCourseJoined) {
+          onCourseJoined();
+        }
       }
     } catch (err) {
       setError('Failed to join a course. Please try again.');
@@ -66,8 +65,8 @@ export default function CreateCourseModal({ isOpen, onClose, onCourseJoined }: J
           <label className="block text-sm font-medium text-gray-700">Course Code</label>
           <input
             type="text"
-            name="name"
-            value={formData.name}
+            name="code"
+            value={formData.code}
             onChange={handleChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
             required

@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 export default function SubmittedAutograderPage() {
   const router = useRouter();
@@ -12,34 +11,32 @@ export default function SubmittedAutograderPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const parts = window.location.pathname.split('/');
-      setCourseId(parts[2]);
-      setAssignmentId(parts[4]);
+      const course = parts[2];
+      const assignment = parts[4];
+      setCourseId(course);
+      setAssignmentId(assignment);
     }
   }, []);
 
+  useEffect(() => {
+    if (courseId && assignmentId) {
+      const timeout = setTimeout(() => {
+        router.push(`/course/${courseId}/assignment/${assignmentId}/submitted-feedback`);
+      }, 20000); // 20 seconds before redirect
+
+      return () => clearTimeout(timeout);
+    }
+  }, [courseId, assignmentId, router]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Assignment Submitted</h1>
-        <p className="text-gray-600 mb-6">
-          Your assignment has been submitted and is being processed by the autograder.
-        </p>
-        <div className="flex justify-between items-center">
-          <button
-            onClick={() => router.push(`/course/${courseId}`)}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            Back to Course
-          </button>
-          <button
-            onClick={() => router.push(`/course/${courseId}/assignment/${assignmentId}/submitted-feedback`)}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-          >
-            View Feedback
-          </button>
-        </div>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4">
+      <div className="flex flex-col items-center">
+        <div className="w-16 h-16 border-4 border-blue-400 border-dashed rounded-full animate-spin"></div>
+        <h1 className="mt-6 text-xl font-semibold text-gray-700">
+          Processing your submission...
+        </h1>
+        <p className="mt-2 text-gray-500 text-sm">Hang tight! You'll be redirected shortly.</p>
       </div>
     </div>
   );
-} 
+}

@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from assignments.models import Submission
+from django.db.models import JSONField
 
 class Grade(models.Model):
     submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name='grade')
@@ -12,6 +13,7 @@ class Grade(models.Model):
     is_finalized = models.BooleanField(default=False)
     submitted_file = models.FileField(upload_to='submitted_code/', null=True, blank=True)    
     submitted_code_text = models.TextField(null=True, blank=True)
+    submitted_files_json = models.JSONField(null=True, blank=True)
     
     def __str__(self):
         return f"Grade for {self.submission.student} on {self.submission.assignment}"

@@ -382,6 +382,14 @@ export const apiFunctions = {
     
     return response.data;
   },
-};
+  getCourseRoster: async (courseId: number): Promise<{ students: any[]; instructors: any[] }> => {
+     const response = await api.get(`/courses/${courseId}/roster/`);
+     return response.data;
+  },
 
+  getInstructorDetails: async (instructorId: number): Promise<any> => {
+     const response = await api.get(`/instructors/${instructorId}/`);
+     return response.data;
+  },
+ };
 export default api; 

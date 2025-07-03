@@ -75,6 +75,20 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'status': 'student added'})
         except Student.DoesNotExist:
             return Response({'error': 'No student or instructor found for this user_id'}, status=status.HTTP_404_NOT_FOUND)
+        
+        @action(detail=True, methods=['get'], url_path='roster')
+        def get_roster(self, request, pk=None):
+           course = self.get_object()
+           students = course.students.all()
+           instructors = course.instructors.all()
+
+           students_data = StudentSerializer(students, many=True).data
+           instructors_data = InstructorSerializer(instructors, many=True).data
+
+           return Response({
+             'students': students_data,
+             'instructors': instructors_data
+          })
 
 @extend_schema_view(
     list=extend_schema(description="List all students"),

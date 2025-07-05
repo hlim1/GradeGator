@@ -1,8 +1,9 @@
 # assignments/api/serializers.py 
 from rest_framework import serializers
-from assignments.models import Assignment, Submission, SubmissionFile, GradingRubric
+from assignments.models import Assignment, Submission, SubmissionFile, GradingRubric, StudentAccommodation
 from grading.models import Grade, Feedback
 from courses.models import Student
+from courses.api.serializers import StudentSerializer
 
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,9 +26,21 @@ class SubmissionSerializer(serializers.ModelSerializer):
     student = serializers.PrimaryKeyRelatedField(queryset=Student.objects.all())
     assignment = serializers.PrimaryKeyRelatedField(queryset=Assignment.objects.all())
 
+    student_detail = StudentSerializer(source='student', read_only=True)
+
+    # NEW FIELD for frontend filtering
+    status = serializers.SerializerMethodField()
+
     class Meta:
         model = Submission
-        fields = '__all__'
+        fields = '__all__'  # this includes 'status' because it's defined above
+
+    def get_status(self, submission):
+        # 1. Check if this submission is graded
+        if Grade.objects.filter(submission=submission, is_finalized=True).exists():
+            return 'graded'
+        else:
+            return 'ungraded'
 
     def create(self, validated_data):
         files_data = validated_data.pop('files', [])

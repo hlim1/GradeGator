@@ -6,6 +6,9 @@ import { FaSearch, FaTrash } from 'react-icons/fa';
 import CourseSidebarInstructor from './CourseSidebarInstructor';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import RosterPage from './RosterPage';
+import { useParams } from 'next/navigation';
+
 
 interface AssignmentData {
   assignmentName: string;
@@ -35,6 +38,8 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
   const [isLoading, setIsLoading] = useState(true);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
   const router = useRouter();
+  const params = useParams();
+  const courseId = params.courseId as string;
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -258,12 +263,7 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
           </div>
         );
       case 'roster':
-        return (
-          <div className="p-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Class Roster</h2>
-            <p className="text-gray-600 mt-2">Roster content coming soon...</p>
-          </div>
-        );
+         return <RosterPage courseId={courseId} />;
       case 'documents':
         return (
           <div className="p-4">

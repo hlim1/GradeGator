@@ -16,6 +16,11 @@ interface ParsedFeedback {
   testResults: TestResult[];
 }
 
+interface SubmittedFile {
+  filename: string;
+  code_text: string;
+}
+
 export default function SubmittedFeedbackPage() {
   const router = useRouter();
 
@@ -24,11 +29,10 @@ export default function SubmittedFeedbackPage() {
   const [assignmentId, setAssignmentId] = useState<string | null>(null);
   const [grade, setGrade] = useState<any | null>(null);
   const [parsedFeedback, setParsedFeedback] = useState<ParsedFeedback | null>(null);
-  const [submittedFileUrl, setSubmittedFileUrl] = useState<string | null>(null);
-  const [submittedCodeText, setSubmittedCodeText] = useState<string | null>(null);
+  const [submittedFiles, setSubmittedFiles] = useState<SubmittedFile[]>([]);
+  const [codeDropdownsOpen, setCodeDropdownsOpen] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<'results' | 'code'>('results');
 
-  // Set IDs
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -42,7 +46,6 @@ export default function SubmittedFeedbackPage() {
     setAssignmentId(assignment);
   }, []);
 
-  // Fetch data once IDs are ready
   useEffect(() => {
     const fetchData = async () => {
       if (!assignmentId || !userId) return;
@@ -53,8 +56,8 @@ export default function SubmittedFeedbackPage() {
         console.log(res);
         setGrade(res);
 
-        if (res && res.length > 0 && res[1].feedback) {
-          const feedbackStr = res[1].feedback;
+        if (res?.feedback) {
+          const feedbackStr = res.feedback;
           const start = feedbackStr.indexOf('{');
           if (start !== -1) {
             try {
@@ -70,8 +73,10 @@ export default function SubmittedFeedbackPage() {
           }
         }
 
-        if (res[1]?.submitted_code_text) {
-          setSubmittedCodeText(res[1].submitted_code_text);
+        if (res?.submitted_files_json) {
+          setSubmittedFiles(res.submitted_files_json);
+        } else if (res?.submitted_code_text) {
+          setSubmittedFiles([{ filename: 'Guitar.java', code_text: res.submitted_code_text }]);
         }
 
       } catch (err) {
@@ -82,12 +87,15 @@ export default function SubmittedFeedbackPage() {
     fetchData();
   }, [assignmentId, userId]);
 
+  const toggleDropdown = (filename: string) => {
+    setCodeDropdownsOpen(prev => ({ ...prev, [filename]: !prev[filename] }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Assignment Feedback</h1>
 
-        {/* Tab switcher */}
         <div className="flex mb-4 border-b">
           <button
             className={`px-4 py-2 font-medium ${
@@ -107,13 +115,24 @@ export default function SubmittedFeedbackPage() {
           </button>
         </div>
 
-        {/* Render either the results or code tab */}
         {activeTab === 'code' ? (
-          <div className="bg-gray-100 p-4 rounded-md">
-            {submittedCodeText ? (
-              <pre className="whitespace-pre-wrap bg-white p-4 rounded shadow max-h-[600px] overflow-y-auto text-sm text-gray-800">
-                {submittedCodeText}
-              </pre>
+          <div className="bg-gray-100 p-4 rounded-md space-y-4">
+            {submittedFiles.length > 0 ? (
+              submittedFiles.map((file, index) => (
+                <div key={index}>
+                  <div
+                    className="cursor-pointer text-sm text-blue-600 hover:underline"
+                    onClick={() => toggleDropdown(file.filename)}
+                  >
+                    <span>{codeDropdownsOpen[file.filename] ? '▼' : '▶'} {file.filename}</span>
+                  </div>
+                  {codeDropdownsOpen[file.filename] && (
+                    <pre className="whitespace-pre-wrap bg-white p-4 rounded shadow max-h-[600px] overflow-y-auto text-sm text-gray-800 mt-2">
+                      {file.code_text}
+                    </pre>
+                  )}
+                </div>
+              ))
             ) : (
               <p className="text-gray-600">No submitted code available.</p>
             )}
@@ -147,8 +166,8 @@ export default function SubmittedFeedbackPage() {
 
             <div className="border rounded-lg p-4">
               <h2 className="text-lg font-semibold text-gray-700 mb-2">Manual Feedback</h2>
-              {grade && grade[0]?.manualFeedback ? (
-                <p className="text-gray-800">{grade[0].manualFeedback}</p>
+              {grade?.manualFeedback ? (
+                <p className="text-gray-800">{grade.manualFeedback}</p>
               ) : (
                 <p className="text-sm text-gray-600 italic">No manual feedback available.</p>
               )}

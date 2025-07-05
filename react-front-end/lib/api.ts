@@ -285,7 +285,7 @@ export const apiFunctions = {
         assignment: assignmentId
       }
     });
-    return response.data.filter(submission => submission.assignment === assignmentId);
+    return response.data;
   },
 
   // Get autograder results from a submission

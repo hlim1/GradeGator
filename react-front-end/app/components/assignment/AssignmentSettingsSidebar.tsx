@@ -1,28 +1,28 @@
 'use client'
 
 import React from 'react';
-import { Course } from '@/lib/api';
+import { Assignment} from '@/lib/api';
 import { Dispatch, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-interface CourseSidebarInstructorProps {
-  course: Course;
-  activeTab: 'assignments' | 'gradebook' | 'roster' | 'documents';
-  setActiveTab: Dispatch<SetStateAction<'assignments' | 'gradebook' | 'roster' | 'documents'>>;
+interface AssignmentSidebarProps {
+  assignment: Assignment;
+  activeTab: 'submissions' | 'settings' | 'autograder' | 'outline';
+  setActiveTab: Dispatch<SetStateAction<'submissions' | 'settings' | 'autograder' | 'outline'>>;
 }
 
-export default function CourseSidebarInstructor({ 
-  course,
+export default function AssignmentSidebar({
+  assignment,
   activeTab,
-  setActiveTab 
-}: CourseSidebarInstructorProps) {
+  setActiveTab
+}: AssignmentSidebarProps) {
   const router = useRouter();
 
   return (
     <aside className="w-64 min-h-screen bg-white border-r">
       <div className="p-4">
-        <div 
+        <div
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => router.push('/dashboard')}
         >
@@ -38,66 +38,66 @@ export default function CourseSidebarInstructor({
       </div>
       <nav className="p-4">
         <div className="mb-4">
-          <button 
-            onClick={() => setActiveTab('assignments')}
+          <button
+            onClick={() => setActiveTab('submissions')}
             className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
-              activeTab === 'assignments'
+              activeTab === 'submissions'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
             </svg>
-            Assignments
+            Submissions
           </button>
         </div>
         <div className="mb-4">
-          <button 
-            onClick={() => setActiveTab('gradebook')}
+          <button
+            onClick={() => setActiveTab('settings')}
             className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
-              activeTab === 'gradebook'
+              activeTab === 'settings'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
             </svg>
-            Grade Book
+            Settings
           </button>
         </div>
         <div className="mb-4">
-          <button 
-            onClick={() => setActiveTab('roster')}
+          <button
+            onClick={() => setActiveTab('autograder')}
             className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
-              activeTab === 'roster'
+              activeTab === 'autograder'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
-            Roster
+            Autograder
           </button>
         </div>
         <div className="mb-4">
-          <button 
-            onClick={() => setActiveTab('documents')}
+          <button
+            onClick={() => setActiveTab('outline')}
             className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
-              activeTab === 'documents'
+              activeTab === 'outline'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
             </svg>
-            Documents
+            Outline
           </button>
         </div>
       </nav>
     </aside>
   );
-} 
+}

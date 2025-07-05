@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import { logoutUser } from "@/utils/logout";
 
-const AUTO_LOGOUT_TIMEOUT = 1 * 60 * 1000; // 20 minutes
+const AUTO_LOGOUT_TIMEOUT = 20 * 60 * 1000; // 20 minutes
 export default function useIdleLogout() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 

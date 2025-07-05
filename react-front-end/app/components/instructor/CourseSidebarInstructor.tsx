@@ -40,14 +40,14 @@ export default function CourseSidebarInstructor({
         <div className="mb-4">
           <button 
             onClick={() => setActiveTab('assignments')}
-            className={`w-full px-4 py-2 text-left rounded-lg transition-colors ${
+            className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
               activeTab === 'assignments'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="curre> 62               
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.> 63             
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
             </svg>
             Assignments
           </button>
@@ -55,7 +55,7 @@ export default function CourseSidebarInstructor({
         <div className="mb-4">
           <button 
             onClick={() => setActiveTab('gradebook')}
-            className={`w-full px-4 py-2 text-left rounded-lg transition-colors ${
+            className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
               activeTab === 'gradebook'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
@@ -70,7 +70,7 @@ export default function CourseSidebarInstructor({
         <div className="mb-4">
           <button 
             onClick={() => setActiveTab('roster')}
-            className={`w-full px-4 py-2 text-left rounded-lg transition-colors ${
+            className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
               activeTab === 'roster'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
@@ -85,7 +85,7 @@ export default function CourseSidebarInstructor({
         <div className="mb-4">
           <button 
             onClick={() => setActiveTab('documents')}
-            className={`w-full px-4 py-2 text-left rounded-lg transition-colors ${
+            className={`flex flex-row gap-x-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
               activeTab === 'documents'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'

@@ -7,6 +7,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
+from django.conf import settings
+from grade_gator.storage_backends import ProfessorTestCasesStorage
 import boto3
 import json
 import uuid
@@ -223,18 +225,37 @@ class SubmissionUploadView(GenericAPIView):
     request=GradingRubricSerializer,
     responses={201: GradingRubricSerializer},
     description="Upload a grading rubric (PDF/ZIP/etc) associated with an assignment"
-)  
+)
 
-        
 class RubricUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)
     serializer_class = GradingRubricSerializer
-    serializer = GradingRubricSerializer
 
     def post(self, request, *args, **kwargs):
+        assignment_id = request.data.get("assignment")
+        if not assignment_id:
+            return Response({'error': 'Missing assignment ID'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Instantiate your custom storage
+        storage = ProfessorTestCasesStorage()
+        bucket = storage.bucket  # This is a boto3 Bucket resource
+
+        # List and delete matching object
+        try:
+            for obj in bucket.objects.all():
+                key = obj.key
+                print(f"Checking S3 key: {key}")
+                if key.startswith(f"{assignment_id}_"):
+                    print(f"Deleting matching autograder: {key}")
+                    obj.delete()
+                    break  # stop after first match
+        except Exception as e:
+            return Response({'error': 'Failed to delete existing autograder',
+                             'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Continue to save the uploaded file
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-            #return Response({"file_url": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

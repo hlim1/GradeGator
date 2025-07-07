@@ -350,9 +350,14 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     return;
                   }
                   const formData = new FormData();
-                  formData.append('rubric', rubricFile);
+
+                  // Make sure to use exact field names from the schema
+                  formData.append('rubric_file', rubricFile);
+                  formData.append('instructor', userId.toString());
+                  formData.append('assignment', assignment.id.toString());
+
                   try {
-                    await apiFunctions.uploadRubricFile(assignment.id, formData);
+                    await apiFunctions.uploadRubric(formData);
                     alert('Rubric uploaded!');
                   } catch (err) {
                     console.error(err);

@@ -1,221 +1,183 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Sidebar from '../components/Sidebar';
-import CourseBlock from '../components/CourseBlock';
-import CreateCourseModal from '../components/CreateCourseModal';
-import JoinCourseModal from '../components/JoinCourseModal';
-import { Course } from '@/lib/api';
-import { useUser } from '../contexts/UserContext';
-import { apiFunctions } from '@/lib/api';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Sidebar from "../components/Sidebar";
+import CourseBlock from "../components/CourseBlock";
+import CreateCourseModal from "../components/CreateCourseModal";
+import JoinCourseModal from "../components/JoinCourseModal";
+import { Course } from "@/lib/api";
+import { apiFunctions } from "@/lib/api";
 
 function compareSemesters(a: string, b: string) {
-  const [termA, yearA] = a.split(' ');
-  const [termB, yearB] = b.split(' ');
+  const [termA, yearA] = a.split(" ");
+  const [termB, yearB] = b.split(" ");
 
-  // First compare years
   if (parseInt(yearA) !== parseInt(yearB)) {
     return parseInt(yearB) - parseInt(yearA); // Higher year first
   }
 
-  // Then compare terms within the same year
-  return termA === 'Fall' ? -1 : 1; // Fall before Spring in the same year
+  return termA === "Fall" ? -1 : 1; // Fall before Spring
 }
 
 export default function Dashboard() {
-    const router = useRouter();
-    const { role } = useUser();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sortOption, setSortOption] = useState('name');
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    useEffect(() => {
-    // Fix: Ensure browser environment + delay to avoid hydration skip
-    if (typeof window !== 'undefined') {
-        const hasRefreshed = sessionStorage.getItem("hasRefreshedDashboard");
-        if (!hasRefreshed) {
-          console.log("Here Reload");
-          sessionStorage.setItem("hasRefreshedDashboard", "true");
-          setTimeout(() => {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOption, setSortOption] = useState("name");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasRefreshed = sessionStorage.getItem("hasRefreshedDashboard");
+      if (!hasRefreshed) {
+        sessionStorage.setItem("hasRefreshedDashboard", "true");
+        setTimeout(() => {
           window.location.reload();
-         }, 100); // Delay helps ensure hydration is complete
-       }
-     }
-   }, []);
-    useEffect(() => {
-	    const user = sessionStorage.getItem("userData");
-    	if (!user) {
-     	 router.replace("/login");
-    	}
-     }, [router]);
-
-    const fetchCourses = async () => {
-       try {
-          const userId = sessionStorage.getItem("userId");
-          const fetchedCourses = await apiFunctions.getCoursesByUserId(userId);
-          setCourses(fetchedCourses);
-       } catch (error) {
-          console.error('Error fetching courses:', error);
-       } finally {
-          setIsLoading(false);
-       }
-   };
-
-    useEffect(() => {
-        fetchCourses();
-    }, []);
-
-    const currentCourses = courses.filter(course => 
-        course.term === 'Spring 2025'
-    );
-
-    const pastCourses = courses.filter(course => 
-        course.term !== 'Spring 2025'
-    );
-
-    const handleCourseClick = (course: Course) => {
-        router.push(`/course/${course.id}`);
-    };
-
-    const filteredPastCourses = pastCourses
-        .filter((course) =>
-            course.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .sort((a, b) => {
-            if (sortOption === 'name') {
-                return a.name.localeCompare(b.name);
-            } else if (sortOption === 'semester') {
-                return compareSemesters(a.term, b.term);
-            }
-            return 0;
-        });
-
-    const handleCourseCreated = () => {
-        fetchCourses(); // Refresh the course list
-    };
-
-    const handleCourseJoined = () => {
-      fetchCourses(); // Refresh the course list
-    };
-
-    if (isLoading) {
-        return (
-            <div className="flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1 p-8 bg-gray-50">
-                    <div>Loading courses...</div>
-                </div>
-            </div>
-        );
+        }, 100);
+      }
     }
+  }, []);
 
+  useEffect(() => {
+    const user = sessionStorage.getItem("userData");
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [router]);
+
+  const fetchCourses = async () => {
+    try {
+      const userId = sessionStorage.getItem("userId");
+      const fetchedCourses = await apiFunctions.getCoursesByUserId(userId);
+      if (Array.isArray(fetchedCourses)) {
+        setCourses(fetchedCourses);
+      } else {
+        console.warn("Courses response is not an array:", fetchedCourses);
+        setCourses([]);
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+      setCourses([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const filteredCourses = courses
+    .filter((course) =>
+      course.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOption === "name") return a.name.localeCompare(b.name);
+      if (sortOption === "semester") return compareSemesters(a.term, b.term);
+      return 0;
+    });
+
+  const handleCourseClick = (course: Course) => {
+    router.push(`/course/${course.id}`);
+  };
+
+  const handleCourseCreated = () => {
+    fetchCourses();
+  };
+
+  const handleCourseJoined = () => {
+    fetchCourses();
+  };
+
+  if (isLoading) {
     return (
-        <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex-1 p-8 bg-gray-50">
-                <h1 className="text-2xl font-bold text-gray-700 mb-6">
-                    Dashboard - {role === 'instructor' ? 'Instructor' : 'Student'}
-                </h1>
-
-                <section className="mb-8">
-                    <h2 className="text-xl font-bold text-gray-700 mb-4">Current</h2>
-                    <div className="grid grid-cols-3 gap-4">
-                        {currentCourses.map(course => (
-                            <div
-                                key={course.id}
-                                onClick={() => handleCourseClick(course)}
-                                className="cursor-pointer"
-                            >
-                                <CourseBlock
-                                    courseId={course.id}
-                                    courseName={course.name}
-                                    courseNumber={course.number}
-                                    section={course.section}
-                                    semester={course.term}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-gray-700">Past</h2>
-                        <div className="flex gap-4">
-                            <input
-                                type="text"
-                                placeholder="Search past courses..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md"
-                            />
-                            <select
-                                value={sortOption}
-                                onChange={(e) => setSortOption(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md"
-                            >
-                                <option value="name">Sort by Name</option>
-                                <option value="semester">Sort by Semester</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        {filteredPastCourses.map(course => (
-                            <div
-                                key={course.id}
-                                onClick={() => handleCourseClick(course)}
-                                className="cursor-pointer"
-                            >
-                                <CourseBlock
-                                    courseId={course.id}
-                                    courseName={course.name}
-                                    courseNumber={course.number}
-                                    section={course.section}
-                                    semester={course.term}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {role === 'instructor' && (
-                    <div className="fixed bottom-4 right-4">
-                        <button 
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-md"
-                        >
-                            Create New Course
-                        </button>
-                    </div>
-                )}
-
-                <CreateCourseModal 
-                    isOpen={isCreateModalOpen}
-                    onClose={() => setIsCreateModalOpen(false)}
-                    onCourseCreated={handleCourseCreated}
-                />
-
-                {role === 'student' && (
-                    <div className="fixed bottom-4 right-4">
-                        <button 
-                            onClick={() => setIsJoinModalOpen(true)}
-                            className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-md"
-                        >
-                            Join a Course
-                        </button>
-                    </div>
-                )}
-
-                <JoinCourseModal 
-                    isOpen={isJoinModalOpen}
-                    onClose={() => setIsJoinModalOpen(false)}
-                    onCourseJoined={handleCourseJoined}
-                />
-            </div>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1 p-8 bg-gray-50">
+          <div>Loading courses...</div>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 p-8 bg-gray-50">
+        <h1 className="text-2xl font-bold text-gray-700 mb-6">Dashboard</h1>
+
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-700">Your Courses</h2>
+            <div className="flex gap-4">
+              <input
+                type="text"
+                placeholder="Search courses..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md"
+              />
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md"
+              >
+                <option value="name">Sort by Name</option>
+                <option value="semester">Sort by Semester</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            {filteredCourses.map((course) => (
+              <div
+                key={course.id}
+                onClick={() => handleCourseClick(course)}
+                className="cursor-pointer"
+              >
+                <CourseBlock
+                  courseId={course.id}
+                  courseName={course.name}
+                  courseNumber={course.number}
+                  section={course.section}
+                  semester={course.term}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Show both buttons always since roles are gone */}
+        <div className="fixed bottom-4 right-4 flex gap-4">
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-md"
+          >
+            Create New Course
+          </button>
+          <button
+            onClick={() => setIsJoinModalOpen(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center gap-2 shadow-md"
+          >
+            Join a Course
+          </button>
+        </div>
+
+        <CreateCourseModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCourseCreated={handleCourseCreated}
+        />
+
+        <JoinCourseModal
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          onCourseJoined={handleCourseJoined}
+        />
+      </div>
+    </div>
+  );
 }

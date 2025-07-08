@@ -22,7 +22,6 @@ class CourseViewSet(viewsets.ModelViewSet):
     """
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    #permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['get'], url_path='by-code')
     def get_course_by_code(self, request):
@@ -30,7 +29,6 @@ class CourseViewSet(viewsets.ModelViewSet):
         course = Course.objects.filter(code=code).first()
         if course:
             return Response({'id': course.id})
-
         return Response({'error': 'Course not found'}, status=404)
 
     @action(detail=False, methods=['get'])
@@ -39,15 +37,9 @@ class CourseViewSet(viewsets.ModelViewSet):
         if not user_id:
             return Response({"error": "user_id query param required"}, status=400)
 
-        try:
-            instructor = Instructor.objects.get(user_id=user_id)
-            courses = instructor.courses.all()
-        except Instructor.DoesNotExist:
-            try:
-                student = Student.objects.get(user_id=user_id)
-                courses = student.courses.all()
-            except Student.DoesNotExist:
-                return Response({"courses": []})
+        instructor_courses = Course.objects.filter(instructors__user_id=user_id)
+        student_courses = Course.objects.filter(students__user_id=user_id)
+        courses = (instructor_courses | student_courses).distinct()
 
         serializer = self.get_serializer(courses, many=True)
         return Response(serializer.data)
@@ -60,35 +52,52 @@ class CourseViewSet(viewsets.ModelViewSet):
         if not user_id:
             return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Try to add as instructor first
-        try:
-            instructor = Instructor.objects.get(user_id=user_id)
+        user_id_str = str(user_id)
+
+        # Try to get or create instructor
+        instructor, created_i = Instructor.objects.get_or_create(
+            user_id=user_id,
+            defaults={
+                'instructor_id': f"I{user_id_str.zfill(6)}",
+                'name': f"User {user_id_str}",
+                'preferred_name': f"User {user_id_str}",
+                'department': 'Not specified'
+            }
+        )
+
+        if not course.instructors.filter(user_id=user_id).exists():
             course.instructors.add(instructor)
             return Response({'status': 'instructor added'})
-        except Instructor.DoesNotExist:
-            pass
 
-        # Then try to add as student
-        try:
-            student = Student.objects.get(user_id=user_id)
+        # Try to get or create student
+        student, created_s = Student.objects.get_or_create(
+            user_id=user_id,
+            defaults={
+                'student_id': f"S{user_id_str.zfill(6)}",
+                'name': f"User {user_id_str}",
+                'preferred_name': f"User {user_id_str}"
+            }
+        )
+
+        if not course.students.filter(user_id=user_id).exists():
             course.students.add(student)
             return Response({'status': 'student added'})
-        except Student.DoesNotExist:
-            return Response({'error': 'No student or instructor found for this user_id'}, status=status.HTTP_404_NOT_FOUND)
-        
-        @action(detail=True, methods=['get'], url_path='roster')
-        def get_roster(self, request, pk=None):
-           course = self.get_object()
-           students = course.students.all()
-           instructors = course.instructors.all()
 
-           students_data = StudentSerializer(students, many=True).data
-           instructors_data = InstructorSerializer(instructors, many=True).data
+        return Response({'error': 'User already added to the course'}, status=status.HTTP_400_BAD_REQUEST)
 
-           return Response({
-             'students': students_data,
-             'instructors': instructors_data
-          })
+    @action(detail=True, methods=['get'], url_path='roster')
+    def get_roster(self, request, pk=None):
+        course = self.get_object()
+        students = course.students.all()
+        instructors = course.instructors.all()
+
+        students_data = StudentSerializer(students, many=True).data
+        instructors_data = InstructorSerializer(instructors, many=True).data
+
+        return Response({
+            'students': students_data,
+            'instructors': instructors_data
+        })
 
 @extend_schema_view(
     list=extend_schema(description="List all students"),

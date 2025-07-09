@@ -7,6 +7,7 @@ from .serializers import CourseSerializer, StudentSerializer, InstructorSerializ
 from .permissions import IsAdminOrInstructor
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.contrib.auth import get_user_model
+
 User = get_user_model()
 
 @extend_schema_view(
@@ -129,6 +130,17 @@ class CourseViewSet(viewsets.ModelViewSet):
             'students': students_data,
             'instructors': instructors_data
         })
+
+    @action(detail=True, methods=['get'], url_path='user-role')
+    def get_user_role(self, request, pk=None):
+        course = self.get_object()
+        user = request.user
+
+        if course.instructors.filter(user_id=user.id).exists():
+            return Response({"role": "instructor"})
+        elif course.students.filter(user_id=user.id).exists():
+            return Response({"role": "student"})
+        return Response({"error": "Not enrolled in this course"}, status=403)
 
 @extend_schema_view(
     list=extend_schema(description="List all students"),

@@ -80,7 +80,7 @@ export default function Dashboard() {
   }, []);
 
   const handleCourseClick = (course: Course) => {
-    router.push(`/course/${course.id}?role=${course.role}`);
+    router.push(`/course/${course.id}`);
   };
 
   const handleCourseCreated = () => {

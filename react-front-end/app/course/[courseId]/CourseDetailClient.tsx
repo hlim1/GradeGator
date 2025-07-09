@@ -30,6 +30,7 @@ export default function CourseDetailClient({ course, assignmentData }: CourseDet
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      console.log(f"The role of the user is {role}");
       {role === 'instructor' ? (
         <CourseInstructorView course={course} assignmentData={assignmentData} />
       ) : (

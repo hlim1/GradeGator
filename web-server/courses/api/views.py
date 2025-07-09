@@ -48,12 +48,12 @@ class CourseViewSet(viewsets.ModelViewSet):
     def add_user(self, request, pk=None):
         course = self.get_object()
         user_id = request.data.get('user_id')
-
+        role = request.data.get('role')
         if not user_id:
             return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         user_id_str = str(user_id)
-
+    
         if role == 'instructor':
             instructor, _ = Instructor.objects.get_or_create(
                 user_id=user_id,

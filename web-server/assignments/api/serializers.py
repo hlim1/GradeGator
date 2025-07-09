@@ -55,7 +55,6 @@ class SubmissionSerializer(serializers.ModelSerializer):
             original_name = file.name
             new_name = f"{assignment_id}_{submission_id}_{student_id}_{original_name}"
             file.name = new_name
-            SubmissionFile.objects.create(submission=submission, file=file)
         return submission
 
 class GradingRubricSerializer(serializers.ModelSerializer):

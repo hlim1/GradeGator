@@ -26,8 +26,10 @@ export default function Dashboard() {
   const [sortOption, setSortOption] = useState("name");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [instructorCourses, setInstructorCourses] = useState<Course[]>([]);
+  const [studentCourses, setStudentCourses] = useState<Course[]>([]);
+
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -52,15 +54,22 @@ export default function Dashboard() {
     try {
       const userId = sessionStorage.getItem("userId");
       const fetchedCourses = await apiFunctions.getCoursesByUserId(userId);
+
       if (Array.isArray(fetchedCourses)) {
-        setCourses(fetchedCourses);
+        const uid = parseInt(userId || "-1");
+        const instructors = fetchedCourses.filter(c => c.instructors.includes(uid));
+        const students = fetchedCourses.filter(c => c.students.includes(uid));
+
+        setInstructorCourses(instructors);
+        setStudentCourses(students);
       } else {
-        console.warn("Courses response is not an array:", fetchedCourses);
-        setCourses([]);
+        setInstructorCourses([]);
+        setStudentCourses([]);
       }
     } catch (error) {
       console.error("Error fetching courses:", error);
-      setCourses([]);
+      setInstructorCourses([]);
+      setStudentCourses([]);
     } finally {
       setIsLoading(false);
     }
@@ -69,16 +78,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchCourses();
   }, []);
-
-  const filteredCourses = courses
-    .filter((course) =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortOption === "name") return a.name.localeCompare(b.name);
-      if (sortOption === "semester") return compareSemesters(a.term, b.term);
-      return 0;
-    });
 
   const handleCourseClick = (course: Course) => {
     router.push(`/course/${course.id}`);
@@ -111,7 +110,7 @@ export default function Dashboard() {
 
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-700">Your Courses</h2>
+            <h2 className="text-xl font-bold text-gray-700">Instructor Courses</h2>
             <div className="flex gap-4">
               <input
                 type="text"
@@ -132,21 +131,63 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            {filteredCourses.map((course) => (
-              <div
-                key={course.id}
-                onClick={() => handleCourseClick(course)}
-                className="cursor-pointer"
-              >
-                <CourseBlock
-                  courseId={course.id}
-                  courseName={course.name}
-                  courseNumber={course.number}
-                  section={course.section}
-                  semester={course.term}
-                />
-              </div>
-            ))}
+            {instructorCourses
+              .filter(course =>
+                course.name.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .sort((a, b) => {
+                if (sortOption === "name") return a.name.localeCompare(b.name);
+                if (sortOption === "semester") return compareSemesters(a.term, b.term);
+                return 0;
+              })
+              .map((course) => (
+                <div
+                  key={course.id}
+                  onClick={() => handleCourseClick(course)}
+                  className="cursor-pointer"
+                >
+                  <CourseBlock
+                    courseId={course.id}
+                    courseName={course.name}
+                    courseNumber={course.number}
+                    section={course.section}
+                    semester={course.term}
+                  />
+                </div>
+              ))}
+          </div>
+        </section>
+
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-700">Student courses</h2>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            {studentCourses
+              .filter(course =>
+                course.name.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .sort((a, b) => {
+                if (sortOption === "name") return a.name.localeCompare(b.name);
+                if (sortOption === "semester") return compareSemesters(a.term, b.term);
+               return 0;
+              })
+              .map((course) => (
+                <div
+                   key={course.id}
+                   onClick={() => handleCourseClick(course)}
+                   className="cursor-pointer"
+                >
+                  <CourseBlock
+                    courseId={course.id}
+                    courseName={course.name}
+                    courseNumber={course.number}
+                    section={course.section}
+                    semester={course.term}
+                  />
+                </div>
+              ))}
           </div>
         </section>
 

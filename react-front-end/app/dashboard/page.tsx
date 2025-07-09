@@ -57,8 +57,8 @@ export default function Dashboard() {
 
       if (Array.isArray(fetchedCourses)) {
         const uid = parseInt(userId || "-1");
-        const instructors = fetchedCourses.filter(c => c.instructors.includes(uid));
-        const students = fetchedCourses.filter(c => c.students.includes(uid));
+        const instructors = fetchedCourses.filter(c => c.role === "instructor");
+        const students = fetchedCourses.filter(c => c.role === "student");
 
         setInstructorCourses(instructors);
         setStudentCourses(students);
@@ -80,7 +80,7 @@ export default function Dashboard() {
   }, []);
 
   const handleCourseClick = (course: Course) => {
-    router.push(`/course/${course.id}`);
+    router.push(`/course/${course.id}?role=${course.role}`);
   };
 
   const handleCourseCreated = () => {

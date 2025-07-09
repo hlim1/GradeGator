@@ -6,6 +6,8 @@ from courses.models import Course, Student, Instructor
 from .serializers import CourseSerializer, StudentSerializer, InstructorSerializer
 from .permissions import IsAdminOrInstructor
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 @extend_schema_view(
     list=extend_schema(description="List all courses"),
@@ -16,10 +18,6 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
     destroy=extend_schema(description="Delete a course")
 )
 class CourseViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for courses.
-    Allows listing, creating, retrieving, updating, and deleting courses.
-    """
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
 
@@ -37,12 +35,35 @@ class CourseViewSet(viewsets.ModelViewSet):
         if not user_id:
             return Response({"error": "user_id query param required"}, status=400)
 
-        instructor_courses = Course.objects.filter(instructors__user_id=user_id)
-        student_courses = Course.objects.filter(students__user_id=user_id)
-        courses = (instructor_courses | student_courses).distinct()
+        results = []
 
-        serializer = self.get_serializer(courses, many=True)
-        return Response(serializer.data)
+        instructor_courses = Course.objects.filter(instructors__user_id=user_id)
+        for course in instructor_courses:
+            results.append({
+                "id": course.id,
+                "name": course.name,
+                "number": course.number,
+                "term": course.term,
+                "section": course.section,
+                "department": course.department,
+                "code": course.code,
+                "role": "instructor"
+            })
+
+        student_courses = Course.objects.filter(students__user_id=user_id).exclude(id__in=[c['id'] for c in results])
+        for course in student_courses:
+            results.append({
+                "id": course.id,
+                "name": course.name,
+                "number": course.number,
+                "term": course.term,
+                "section": course.section,
+                "department": course.department,
+                "code": course.code,
+                "role": "student"
+            })
+
+        return Response(results)
 
     @action(detail=True, methods=['post'])
     def add_user(self, request, pk=None):
@@ -53,20 +74,30 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         user_id_str = str(user_id)
-    
+
+        try:
+            user = User.objects.get(id=user_id)
+            full_name = user.get_full_name() or user.username
+            preferred_name = user.preferred_name or full_name
+            email = user.email or "N/A"
+        except User.DoesNotExist:
+            full_name = f"User {user_id_str}"
+            preferred_name = f"User {user_id_str}"
+            email = "N/A"
+
         if role == 'instructor':
             instructor, _ = Instructor.objects.get_or_create(
                 user_id=user_id,
                 defaults={
                     'instructor_id': f"I{user_id_str.zfill(6)}",
-                    'name': f"User {user_id_str}",
-                    'preferred_name': f"User {user_id_str}",
+                    'name': full_name,
+                    'preferred_name': preferred_name,
                     'department': 'Not specified'
                 }
             )
             if not course.instructors.filter(user_id=user_id).exists():
                 course.instructors.add(instructor)
-                return Response({'status': 'instructor added'})
+                return Response({'status': 'instructor added', 'email': email})
             return Response({'error': 'Instructor already added'}, status=status.HTTP_400_BAD_REQUEST)
 
         elif role == 'student':
@@ -74,18 +105,17 @@ class CourseViewSet(viewsets.ModelViewSet):
                 user_id=user_id,
                 defaults={
                     'student_id': f"S{user_id_str.zfill(6)}",
-                    'name': f"User {user_id_str}",
-                    'preferred_name': f"User {user_id_str}"
+                    'name': full_name,
+                    'preferred_name': preferred_name
                 }
             )
             if not course.students.filter(user_id=user_id).exists():
                 course.students.add(student)
-                return Response({'status': 'student added'})
+                return Response({'status': 'student added', 'email': email})
             return Response({'error': 'Student already added'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'error': 'Invalid role value. Must be "instructor" or "student".'}, status=400)
 
-    
     @action(detail=True, methods=['get'], url_path='roster')
     def get_roster(self, request, pk=None):
         course = self.get_object()
@@ -109,10 +139,6 @@ class CourseViewSet(viewsets.ModelViewSet):
     destroy=extend_schema(description="Delete a student")
 )
 class StudentViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for students.
-    Allows listing, creating, retrieving, updating, and deleting students.
-    """
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
 
@@ -125,9 +151,5 @@ class StudentViewSet(viewsets.ModelViewSet):
     destroy=extend_schema(description="Delete an instructor")
 )
 class InstructorViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for instructors.
-    Allows listing, creating, retrieving, updating, and deleting instructors.
-    """
     queryset = Instructor.objects.all()
     serializer_class = InstructorSerializer

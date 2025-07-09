@@ -5,7 +5,7 @@ import { apiFunctions, Course } from '@/lib/api';
 import { useParams } from 'next/navigation';
 
 interface RosterUser {
-  id: number;
+  id: number | string;
   name: string;
   preferred_name: string | null;
   email: string;
@@ -25,7 +25,7 @@ export default function RosterPage() {
           course.students.map(async (studentId) => {
             const student = await apiFunctions.getStudentDetails(studentId);
             return {
-              id: student.id,
+              id: student.id ?? student.user?.id ?? student.user?.email ?? Math.random().toString(),
               name: student.name,
               preferred_name: student.preferred_name,
               email: student.user?.email || 'N/A',
@@ -38,7 +38,7 @@ export default function RosterPage() {
           course.instructors.map(async (instructorId) => {
             const instructor = await apiFunctions.getInstructorDetails(instructorId);
             return {
-              id: instructor.id,
+              id: instructor.id ?? instructor.user?.id ?? instructor.user?.email ?? Math.random().toString(),
               name: instructor.name,
               preferred_name: instructor.preferred_name,
               email: instructor.user?.email || 'N/A',

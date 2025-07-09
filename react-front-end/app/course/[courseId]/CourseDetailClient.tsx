@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Course } from '@/lib/api';
-import { useUser } from '@/app/contexts/UserContext';
 import CourseInstructorView from '@/app/components/instructor/CourseInstructorView';
 import CourseStudentView from '@/app/components/student/CourseStudentView';
 
@@ -26,11 +26,11 @@ interface CourseDetailClientProps {
 }
 
 export default function CourseDetailClient({ course, assignmentData }: CourseDetailClientProps) {
-  const { role } = useUser();
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role");
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      console.log(f"The role of the user is {role}");
       {role === 'instructor' ? (
         <CourseInstructorView course={course} assignmentData={assignmentData} />
       ) : (
@@ -38,4 +38,4 @@ export default function CourseDetailClient({ course, assignmentData }: CourseDet
       )}
     </div>
   );
-} 
+}

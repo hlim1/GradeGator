@@ -15,11 +15,13 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class StudentSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
     class Meta:
         model = Student
         fields = '__all__'
 
 class InstructorSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
     class Meta:
         model = Instructor
         fields = '__all__'

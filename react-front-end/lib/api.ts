@@ -171,9 +171,10 @@ export const apiFunctions = {
     return response.data;
   },
 
-  addUserCourse: async (userId: number, courseId: number): Promise<any> => {
+  addUserCourse: async (userId: number, courseId: number, role: string): Promise<any> => {
     const response = await api.post(`/courses/${courseId}/add_user/`, {
       user_id: userId,
+      role: role
     });
     return response.data;
   },

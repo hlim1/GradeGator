@@ -48,43 +48,45 @@ class CourseViewSet(viewsets.ModelViewSet):
     def add_user(self, request, pk=None):
         course = self.get_object()
         user_id = request.data.get('user_id')
+        role = request.data.get('as', 'student')  # default to student
 
         if not user_id:
             return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         user_id_str = str(user_id)
 
-        # Try to get or create instructor
-        instructor, created_i = Instructor.objects.get_or_create(
-            user_id=user_id,
-            defaults={
-                'instructor_id': f"I{user_id_str.zfill(6)}",
-                'name': f"User {user_id_str}",
-                'preferred_name': f"User {user_id_str}",
-                'department': 'Not specified'
-            }
-        )
+        if role == 'instructor':
+            instructor, _ = Instructor.objects.get_or_create(
+                user_id=user_id,
+                defaults={
+                    'instructor_id': f"I{user_id_str.zfill(6)}",
+                    'name': f"User {user_id_str}",
+                    'preferred_name': f"User {user_id_str}",
+                    'department': 'Not specified'
+                }
+            )
+            if not course.instructors.filter(user_id=user_id).exists():
+                course.instructors.add(instructor)
+                return Response({'status': 'instructor added'})
+            return Response({'error': 'Instructor already added'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not course.instructors.filter(user_id=user_id).exists():
-            course.instructors.add(instructor)
-            return Response({'status': 'instructor added'})
+        elif role == 'student':
+            student, _ = Student.objects.get_or_create(
+                user_id=user_id,
+                defaults={
+                    'student_id': f"S{user_id_str.zfill(6)}",
+                    'name': f"User {user_id_str}",
+                    'preferred_name': f"User {user_id_str}"
+                }
+            )
+            if not course.students.filter(user_id=user_id).exists():
+                course.students.add(student)
+                return Response({'status': 'student added'})
+            return Response({'error': 'Student already added'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Try to get or create student
-        student, created_s = Student.objects.get_or_create(
-            user_id=user_id,
-            defaults={
-                'student_id': f"S{user_id_str.zfill(6)}",
-                'name': f"User {user_id_str}",
-                'preferred_name': f"User {user_id_str}"
-            }
-        )
+        return Response({'error': 'Invalid role value. Must be "instructor" or "student".'}, status=400)
 
-        if not course.students.filter(user_id=user_id).exists():
-            course.students.add(student)
-            return Response({'status': 'student added'})
-
-        return Response({'error': 'User already added to the course'}, status=status.HTTP_400_BAD_REQUEST)
-
+    
     @action(detail=True, methods=['get'], url_path='roster')
     def get_roster(self, request, pk=None):
         course = self.get_object()

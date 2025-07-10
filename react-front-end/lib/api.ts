@@ -319,5 +319,4 @@ export const apiFunctions = {
     return response.data;
   },
 };
-
 export default api;

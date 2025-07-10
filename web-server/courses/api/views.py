@@ -65,6 +65,54 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         return Response(results)
 
+    @action(detail=True, methods=['post'], url_path='change-role')
+    def change_role(self, request, pk=None):
+        course = self.get_object()
+        user_id = request.data.get('user_id')
+        requested_role = request.data.get('requested_role')
+
+        if not user_id:
+            return Response({'error': 'user_id not found'}, status=status.HTTP_400_BAD_REQUEST)
+        if not requested_role:
+            return Response({'error': 'requested_role not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        role_map = {
+            "student": (Student, "student_id", "S"),
+            "instructor": (Instructor, "instructor_id", "I"),
+        }
+
+        if requested_role not in role_map:
+            return Response({'error': 'Invalid requested_role'}, status=status.HTTP_400_BAD_REQUEST)
+
+        TargetModel, id_field, prefix = role_map[requested_role]
+
+        # Remove from all known roles in this course
+        for Model in [Student, Instructor]:
+            try:
+                role_instance = Model.objects.get(user=user)
+                role_instance.courses.remove(course)
+            except Model.DoesNotExist:
+                continue
+
+        # Add to the new role
+        user_id_str = str(user.id)
+        role_instance, _ = TargetModel.objects.get_or_create(
+            user=user,
+            defaults={
+                id_field: f"{prefix}{user_id_str.zfill(6)}",
+                'name': user.name,
+                'preferred_name': user.preferred_name,
+            }
+        )
+        role_instance.courses.add(course)
+
+        return Response({'message': f'User switched to {requested_role}'}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'])
     def add_user(self, request, pk=None):
         course = self.get_object()

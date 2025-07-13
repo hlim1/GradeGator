@@ -30,7 +30,7 @@ export default function CreateCourseModal({ isOpen, onClose, onCourseJoined }: J
       if (response) {
         const userId = sessionStorage.getItem('userId');
         if (!userId) throw new Error('User not logged in');
-        await apiFunctions.addUserCourse(userId, response.id);
+        await apiFunctions.addUserCourse(userId, response.id, "student");
         onClose();
         if (onCourseJoined) {
           onCourseJoined();

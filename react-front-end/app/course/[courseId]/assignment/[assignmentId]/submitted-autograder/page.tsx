@@ -22,7 +22,7 @@ export default function SubmittedAutograderPage() {
     if (courseId && assignmentId) {
       const timeout = setTimeout(() => {
         router.push(`/course/${courseId}/assignment/${assignmentId}/submitted-feedback`);
-      }, 20000); // 20 seconds before redirect
+      }, 25000); // 25 seconds before redirect
 
       return () => clearTimeout(timeout);
     }

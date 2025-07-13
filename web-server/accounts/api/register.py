@@ -23,9 +23,7 @@ User = get_user_model()
                 'username': {'type': 'string', 'description': 'Optional. If not provided, will be generated from email'},
                 'first_name': {'type': 'string'},
                 'last_name': {'type': 'string'},
-                'preferred_name': {'type': 'string', 'description': 'Optional display name'},
-                'is_student': {'type': 'boolean', 'default': False},
-                'is_instructor': {'type': 'boolean', 'default': False},
+                'preferred_name': {'type': 'string', 'description': 'Optional display name'}
             },
             'required': ['email', 'password', 'password_confirmation']
         }
@@ -47,9 +45,9 @@ User = get_user_model()
 def register_user(request):
     """
     Register a new user in the system.
-    
-    This endpoint creates a new user with the provided details. 
-    The user can be designated as a student or instructor (or both).
+
+    This endpoint creates a new user with the provided details.
+    Role assignment (student/instructor) will be handled at the course level.
     """
     serializer = RegisterSerializer(data=request.data)
     
@@ -58,35 +56,14 @@ def register_user(request):
             try:
                 # Save the user
                 user = serializer.save()
-                
-                # Create Student or Instructor profiles if applicable
-                from courses.models import Student, Instructor
-                
+
                 # Get the display name (preferred_name > full_name > username)
                 preferred_name = getattr(user, 'preferred_name', None)
                 full_name = user.get_full_name()
                 display_name = preferred_name or full_name or user.username
-                
-                if user.is_student:
-                    # Create student profile with default values
-                    student = Student.objects.create(
-                        user=user,
-                        student_id=f"S{user.id:06d}",  # Generate a student ID like S000001
-                        name=full_name or user.username,
-                        preferred_name=display_name
-                    )
-                
-                if user.is_instructor:
-                    # Create instructor profile with default values
-                    instructor = Instructor.objects.create(
-                        user=user,
-                        instructor_id=f"I{user.id:06d}",  # Generate an instructor ID like I000001
-                        name=full_name or user.username,
-                        preferred_name=display_name,
-                        department="Not specified"  # Default department
-                    )
-                
-                # Return the user data without sensitive information
+
+                # 🔥 Removed profile creation logic here
+
                 return Response(
                     UserSerializer(user).data,
                     status=status.HTTP_201_CREATED
@@ -97,7 +74,7 @@ def register_user(request):
                     'detail': str(e)
                 }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        print(f"Registration validation failed: {serializer.errors}")  # Add debugging
+        print(f"Registration validation failed: {serializer.errors}")
         return Response({
             'error': 'Validation failed',
             'detail': serializer.errors

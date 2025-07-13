@@ -1,89 +1,80 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { apiFunctions, Course } from '@/lib/api';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { apiFunctions } from '@/lib/api';
+import UserEditModal from '@/components/UserEditModal';
 
-interface RosterUser {
-  id: number;
-  name: string;
-  preferred_name: string | null;
-  email: string;
-  role: 'Student' | 'Instructor';
-}
-
-export default function RosterPage() {
-  const { courseId } = useParams();
-  const [roster, setRoster] = useState<RosterUser[]>([]);
+export default function RosterPage({ courseId }: { courseId: string }) {
+  const [roster, setRoster] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchRoster = async () => {
-      if (!courseId) return;
       try {
-        const course: Course = await apiFunctions.getCourse(Number(courseId));
-        const studentList = await Promise.all(
-          course.students.map(async (studentId) => {
-            const student = await apiFunctions.getStudentDetails(studentId);
-            return {
-              id: student.id,
-              name: student.name,
-              preferred_name: student.preferred_name,
-              email: student.user?.email || 'N/A',
-              role: 'Student',
-            };
-          })
-        );
-
-        const instructorList = await Promise.all(
-          course.instructors.map(async (instructorId) => {
-            const instructor = await apiFunctions.getInstructorDetails(instructorId);
-            return {
-              id: instructor.id,
-              name: instructor.name,
-              preferred_name: instructor.preferred_name,
-              email: instructor.user?.email || 'N/A',
-              role: 'Instructor',
-            };
-          })
-        );
-
-        setRoster([...instructorList, ...studentList]);
+        const data = await apiFunctions.getCourseRoster(Number(courseId));
+        const flat = [
+          ...data.students.map((s: any) => ({ ...s, role: 'student' })),
+          ...data.instructors.map((i: any) => ({
+            ...i,
+            role: i.name.toLowerCase().includes('ta') ? 'TA' : 'instructor',
+          })),
+        ];
+        setRoster(flat);
       } catch (err) {
-        console.error('Error fetching roster:', err);
+        console.error('Failed to fetch roster:', err);
       }
     };
-
     fetchRoster();
   }, [courseId]);
 
+  const openModal = (user: any) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelectedUser(null);
+    setIsModalOpen(false);
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Class Roster</h1>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 border">
-          <thead className="bg-gray-100">
+    <div>
+      <h1 className="text-xl font-bold mb-4">Roster</h1>
+      {roster.length === 0 ? (
+        <p className="text-gray-500">No students or instructors found.</p>
+      ) : (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead>
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Preferred Name</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Email</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Role</th>
+              <th className="px-4 py-2 text-left">Name</th>
+              <th className="px-4 py-2 text-left">Email</th>
+              <th className="px-4 py-2 text-left">Role</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody>
             {roster.map((user) => (
-              <tr key={`${user.role}-${user.id}`}>
+              <tr
+                key={user.user || user.user_id}
+                className="hover:bg-gray-100 cursor-pointer"
+                onClick={() => openModal(user)}
+              >
                 <td className="px-4 py-2">{user.name}</td>
-                <td className="px-4 py-2">{user.preferred_name || '-'}</td>
                 <td className="px-4 py-2">{user.email}</td>
-                <td className="px-4 py-2">{user.role}</td>
+                <td className="px-4 py-2 capitalize">{user.role}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {roster.length === 0 && (
-          <p className="text-sm text-gray-500 mt-4">No students or instructors found.</p>
-        )}
-      </div>
+      )}
+
+      <UserEditModal
+        user={selectedUser}
+        courseId={courseId}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+      />
     </div>
   );
 }

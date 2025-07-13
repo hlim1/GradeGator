@@ -52,8 +52,6 @@ class GradeViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        print("📦 Incoming request.data:", dict(data))
-        print("📬 request.POST:", request.POST)
         print("FILES RECEIVED:", request.FILES)
 
         submission_id = data.get('submission')
@@ -67,7 +65,6 @@ class GradeViewSet(viewsets.ModelViewSet):
             result = json.loads(raw) if raw else {}
         except json.JSONDecodeError:
             return Response({'error': 'invalid result_data'}, status=400)
-        print("✅ Parsed result_data:", result)
 
         raw_output = result.get('output', '')
         start = raw_output.find('{')

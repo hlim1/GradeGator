@@ -1,57 +1,34 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
-// Base URL for all API requests
 const API_URL = 'http://18.188.140.218:8000/api';
 
-// Create axios instance with credentials support
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // This is crucial for sending/receiving cookies
+  withCredentials: true,
 });
 
-// Function to get access token safely
-// const getAccessToken = () => {
-//   if (typeof window !== 'undefined') {
-//     return localStorage.getItem('access_token');
-//   }
-//   return null;
-// };
-
-// Function to get CSRF token from cookie
 function getCsrfToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
+  if (typeof window === 'undefined') return null;
   const tokenCookieName = 'csrftoken';
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
-    if (name === tokenCookieName) {
-      return value;
-    }
+    if (name === tokenCookieName) return value;
   }
   return null;
 }
 
-// Add request interceptor to include CSRF token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add CSRF token for mutations
     if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
       const csrfToken = getCsrfToken();
-      if (csrfToken) {
-        config.headers['X-CSRFToken'] = csrfToken;
-      }
+      if (csrfToken) config.headers['X-CSRFToken'] = csrfToken;
     }
-
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Add response interceptor to handle authentication errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -62,7 +39,8 @@ api.interceptors.response.use(
   }
 );
 
-// Type definitions matching API schema
+// TYPES
+
 export interface Course {
   id: number;
   name: string;
@@ -87,51 +65,34 @@ export interface AuthStatus {
   message?: string;
 }
 
-export interface Assignment {
-  id: number;
-  assignment_id: string;
-  name: string;
-  grade_method: 'POINTS';
-  points: number;
-  due_date: string;
-  release_date: string;
-  is_visible_to_students: boolean;
-  created_at: string;
-  updated_at: string;
-  is_manually_graded: boolean;
-  course: number;
-}
-
-export interface Submission {
-  id: number;
-  submission_file: string;
-  student: number;
-  assignment: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface User {
   id: number;
   username: string;
   email: string;
-  is_student: boolean;
-  is_instructor: boolean;
-  student_id: string;
-  instructor_id: string;
   preferred_name: string;
+  student_profile?: {
+    id: number;
+    student_id: string;
+    name: string;
+    preferred_name: string;
+  } | null;
+  instructor_profile?: {
+    id: number;
+    instructor_id: string;
+    name: string;
+    preferred_name: string;
+    department: string;
+  } | null;
 }
 
 export interface RegisterRequest {
   email: string;
   password: string;
   password_confirmation: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-  preferred_name: string;
-  is_student: boolean;
-  is_instructor: boolean;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  preferred_name?: string;
 }
 
 export interface Submission {
@@ -152,7 +113,6 @@ interface Grading {
   graded_by: number | null;
 }
 
-
 export interface SubmissionRequest {
   submission_file: File;
   student: number;
@@ -167,28 +127,18 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   success: boolean;
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-    is_student: boolean;
-    is_instructor: boolean;
-    student_id: string;
-    instructor_id: string;
-    preferred_name: string;
-  };
+  user?: User;
   error?: [];
 }
 
-// API functions
+// API FUNCTIONS
+
 export const apiFunctions = {
-  // Check authentication status
   checkAuthStatus: async (): Promise<AuthStatus> => {
     const response = await api.get<AuthStatus>('/auth-status/');
     return response.data;
   },
 
-  // Get all courses
   getCourses: async (): Promise<Course[]> => {
     const response = await api.get<Course[]>('/courses/');
     return response.data;
@@ -198,14 +148,12 @@ export const apiFunctions = {
     const response = await api.get<Course[]>(`/courses/by_user/?user_id=${userId}`);
     return response.data;
   },
-  
-  // Get a specific course
+
   getCourse: async (id: number): Promise<Course> => {
     const response = await api.get<Course>(`/courses/${id}/`);
     return response.data;
   },
 
-  // Create a new course
   createCourse: async (courseData: CourseRequest): Promise<Course> => {
     const response = await api.post<Course>('/courses/', courseData);
     return response.data;
@@ -218,26 +166,23 @@ export const apiFunctions = {
     return response.data;
   },
 
-  // Update a course
   updateCourse: async (id: number, courseData: Partial<CourseRequest>): Promise<Course> => {
     const response = await api.patch<Course>(`/courses/${id}/`, courseData);
     return response.data;
   },
 
-  // Add user to a course
-  addUserCourse: async (userId: number, courseId: number): Promise<any> => {
+  addUserCourse: async (userId: number, courseId: number, role: string): Promise<any> => {
     const response = await api.post(`/courses/${courseId}/add_user/`, {
       user_id: userId,
+      role: role
     });
     return response.data;
   },
 
-  // Delete a course
   deleteCourse: async (id: number): Promise<void> => {
     await api.delete(`/courses/${id}/`);
   },
 
-  // Assignment functions
   getAssignments: async (): Promise<Assignment[]> => {
     const response = await api.get<Assignment[]>('/assignments/');
     return response.data;
@@ -262,7 +207,6 @@ export const apiFunctions = {
     await api.delete(`/assignments/${id}/`);
   },
 
-  // Get assignments for a specific course
   getCourseAssignments: async (courseId: number): Promise<Assignment[]> => {
     const response = await api.get<Assignment[]>('/assignments/', {
       params: {
@@ -272,13 +216,11 @@ export const apiFunctions = {
     return response.data.filter(assignment => assignment.course === courseId);
   },
 
-  // Get submissions
   getSubmissions: async (): Promise<Submission[]> => {
     const response = await api.get<Submission[]>('/submissions/');
     return response.data;
   },
 
-  // Get submissions for a specific assignment
   getAssignmentSubmissions: async (assignmentId: number): Promise<Submission[]> => {
     const response = await api.get<Submission[]>('/submissions/', {
       params: {
@@ -288,7 +230,6 @@ export const apiFunctions = {
     return response.data;
   },
 
-  // Get autograder results from a submission
   getGradingResults: async (submissionId: number): Promise<Grading> => {
     const response = await api.get<Grading>('/grades/', {
       params: {
@@ -298,7 +239,6 @@ export const apiFunctions = {
     return response.data;
   },
 
-  //Get submission ID, for specific assignment and student
   getSubmissionId: async (assignmentId: number, studentId: number): Promise<Submission> => {
     const response = await api.get<Submission>('/submissions/', {
       params: {
@@ -309,18 +249,11 @@ export const apiFunctions = {
     return response.data.id;
   },
 
-  // Get student details// Get submissions
-  getSubmissions: async (): Promise<Submission[]> => {
-    const response = await api.get<Submission[]>('/submissions/');
-    return response.data;
-  },
-
   getStudentDetails: async (studentId: number): Promise<any> => {
     const response = await api.get(`/students/${studentId}/`);
     return response.data;
   },
 
-  // Create a new submission
   createSubmission: async (data: SubmissionRequest): Promise<Submission> => {
     const formData = new FormData();
     formData.append('submission_file', data.submission_file);
@@ -341,11 +274,10 @@ export const apiFunctions = {
     }
   },
 
-  // Upload submission file
-  uploadSubmission: async (submissionData: { 
+  uploadSubmission: async (submissionData: {
     submission_file: File,
     student: number,
-    assignment: number 
+    assignment: number
   }): Promise<Submission> => {
     const formData = new FormData();
     formData.append('files', submissionData.submission_file);
@@ -355,41 +287,44 @@ export const apiFunctions = {
     return response.data;
   },
 
-  // Upload rubric file
   uploadRubric: async (formData: FormData): Promise<any> => {
-    // Don't set Content-Type header - let the browser set it with boundary
-    console.log(formData instanceof FormData); // should print: true
     const response = await api.post('/upload/rubric/', formData);
     return response.data;
   },
 
-  // Register a new user
   register: async (userData: RegisterRequest): Promise<User> => {
     const response = await api.post<User>('/register/', userData);
     return response.data;
   },
 
-  // Login user
   login: async (credentials: Partial<LoginRequest>): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>('/login/', credentials);
-    
+
     if (response.data.success && response.data.user) {
-      // Store user data
       if (typeof window !== 'undefined') {
         localStorage.setItem('user_data', JSON.stringify(response.data.user));
       }
     }
-    
+
     return response.data;
   },
+
   getCourseRoster: async (courseId: number): Promise<{ students: any[]; instructors: any[] }> => {
-     const response = await api.get(`/courses/${courseId}/roster/`);
-     return response.data;
+    const response = await api.get(`/courses/${courseId}/roster/`);
+    return response.data;
+  },
+
+  changeUserRole: async (courseId: string, userId: number, requestedRole: string) => {
+    const res = await api.post(`/courses/${courseId}/change-role/`, {
+      user_id: userId,
+      requested_role: requestedRole,
+    });
+    return res.data;
   },
 
   getInstructorDetails: async (instructorId: number): Promise<any> => {
-     const response = await api.get(`/instructors/${instructorId}/`);
-     return response.data;
+    const response = await api.get(`/instructors/${instructorId}/`);
+    return response.data;
   },
- };
-export default api; 
+};
+export default api;

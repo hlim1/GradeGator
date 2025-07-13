@@ -62,22 +62,22 @@ def current_user(request):
     }
     
     # Add student info if available
-    if hasattr(user, 'student_profile') and user.student_profile.exists():
-        student = user.student_profile
-        data['student'] = {
-            'id': student.id,
-            'name': student.name,
-            'student_id': student.student_id,
-        }
+    #if hasattr(user, 'student_profile') and user.student_profile.exists():
+    #    student = user.student_profile
+    #    data['student'] = {
+    #        'id': student.id,
+    #        'name': student.name,
+    #        'student_id': student.student_id,
+    #    }
     
     # Add instructor info if available
-    if hasattr(user, 'instructor_profile') and user.instructor_profile.exists():
-        instructor = user.instructor_profile
-        data['instructor'] = {
-            'id': instructor.id,
-            'name': instructor.name,
-            'instructor_id': instructor.instructor_id,
-        }
+    #if hasattr(user, 'instructor_profile') and user.instructor_profile.exists():
+    #    instructor = user.instructor_profile
+    #    data['instructor'] = {
+    #        'id': instructor.id,
+    #        'name': instructor.name,
+    #        'instructor_id': instructor.instructor_id,
+    #    }
     
     return Response(data)
 
@@ -139,18 +139,18 @@ def login_user(request):
         login(request, user)
         
         # Get student/instructor IDs if they exist
-        student_id = None
-        instructor_id = None
+        #student_id = None
+        #instructor_id = None
         
-        if user.is_student and hasattr(user, 'student_profile'):
-            student = user.student_profile
-            if student:
-                student_id = student.student_id
+        #if user.is_student and hasattr(user, 'student_profile'):
+        #    student = user.student_profile
+        #    if student:
+        #        student_id = student.student_id
                 
-        if user.is_instructor and hasattr(user, 'instructor_profile'):
-            instructor = user.instructor_profile
-            if instructor:
-                instructor_id = instructor.instructor_id
+        #if user.is_instructor and hasattr(user, 'instructor_profile'):
+        #    instructor = user.instructor_profile
+        #    if instructor:
+        #        instructor_id = instructor.instructor_id
         
         return Response({
             'success': True,
@@ -158,10 +158,6 @@ def login_user(request):
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
-                'is_student': user.is_student,
-                'is_instructor': user.is_instructor,
-                'student_id': student_id,
-                'instructor_id': instructor_id,
                 'preferred_name': user.preferred_name
             }
         })

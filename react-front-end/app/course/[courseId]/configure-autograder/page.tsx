@@ -16,7 +16,7 @@ const NextPage: React.FC = () => {
   // Load assignment data and instructor ID from sessionStorage
   useEffect(() => {
     const storedData = sessionStorage.getItem("assignmentData");
-    const storedInstructorId = sessionStorage.getItem("instructorId");
+    const storedUserId = sessionStorage.getItem("userId");
     
     if (storedData) {
       const parsedData = JSON.parse(storedData);
@@ -24,8 +24,8 @@ const NextPage: React.FC = () => {
       console.log("Loaded assignment data:", parsedData); // Debug log
     }
 
-    if (storedInstructorId) {
-      setInstructorId(parseInt(storedInstructorId, 10));
+    if (storedUserId) {
+      setInstructorId(parseInt(storedUserId, 10));
     }
   }, []);
 

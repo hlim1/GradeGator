@@ -10,8 +10,8 @@ class CustomUserAdmin(UserAdmin):
         return form
     
     # Display fields in list view
-    list_display = ('username', 'email', 'is_staff', 'is_student', 'is_instructor')
-    list_filter = ('is_staff', 'is_student', 'is_instructor')
+    list_display = ('username', 'email', 'is_staff')
+    list_filter = ('is_staff',)
     
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -20,7 +20,6 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('is_active', 'is_staff', 'is_superuser', 
                       'groups', 'user_permissions'),
         }),
-        ('Custom Roles', {'fields': ('is_student', 'is_instructor')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     
@@ -28,20 +27,6 @@ class CustomUserAdmin(UserAdmin):
         (None, {
             'classes': ('wide',),
             'fields': ('username', 'password1', 'password2', 'email',
-                      'is_active', 'is_staff', 'is_superuser',
-                      'is_student', 'is_instructor'),
+                      'is_active', 'is_staff', 'is_superuser'),
         }),
     )
-    
-    # Add bulk actions
-    actions = ['make_student', 'make_instructor']
-    
-    def make_student(self, request, queryset):
-        updated = queryset.update(is_student=True)
-        self.message_user(request, f"{updated} users marked as students")
-    make_student.short_description = "Mark selected as students"
-    
-    def make_instructor(self, request, queryset):
-        updated = queryset.update(is_instructor=True)
-        self.message_user(request, f"{updated} users marked as instructors")
-    make_instructor.short_description = "Mark selected as instructors"

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaGraduationCap } from "react-icons/fa";
 import { apiFunctions, RegisterRequest } from "../../lib/api";
 
 const SignUpPage = () => {
@@ -13,28 +12,15 @@ const SignUpPage = () => {
     username: "",
     first_name: "",
     last_name: "",
-    preferred_name: "",
-    is_student: false,
-    is_instructor: false
+    preferred_name: ""
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
-  };
-
-  const handleRoleSelect = (role: 'student' | 'instructor') => {
-    setFormData(prev => ({
-      ...prev,
-      is_student: role === 'student',
-      is_instructor: role === 'instructor'
-    }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,92 +28,75 @@ const SignUpPage = () => {
     setError(null);
 
     try {
-      if (!formData.email || !formData.password || !formData.password_confirmation ||
-          !formData.first_name || !formData.last_name || !formData.preferred_name) {
+      const { email, password, password_confirmation, first_name, last_name, preferred_name } = formData;
+
+      if (!email || !password || !password_confirmation || !first_name || !last_name || !preferred_name) {
         setError("Please fill in all required fields");
         return;
       }
 
-      if (formData.password !== formData.password_confirmation) {
+      if (password !== password_confirmation) {
         setError("Passwords do not match");
         return;
       }
 
-      if (!formData.is_student && !formData.is_instructor) {
-        setError("Please select a role (Student or Instructor)");
-        return;
+      if (!formData.username) {
+        formData.username = email.split('@')[0].trim().toLowerCase();
       }
 
-      // Generate username from email if not provided
-      if (!formData.username) {
-        formData.username = formData.email.split('@')[0];
-      }
       console.log("Form data being sent:", formData);
       const response = await apiFunctions.register(formData as RegisterRequest);
       console.log("Registration successful:", response);
-      
-      // Redirect to login page after successful registration
-      // Auto-login after successful signup
+
       const loginResponse = await apiFunctions.login({
-      username: formData.username!,
-      password: formData.password!
-     });
+        username: formData.username!,
+        password: formData.password!
+      });
 
       if (!loginResponse.success) {
         setError("Account created, but auto-login failed. Please log in manually.");
         return;
-     }
-      if (loginResponse.user) {
-        console.log("Auto-login successful");
-        console.log("User data:", loginResponse.user);
-     }
-  // Store user data in sessionStorage
-      if (loginResponse.user.is_instructor) {
-        sessionStorage.setItem("instructorId", loginResponse.user.id.toString());
-     }
-     sessionStorage.setItem("userId", loginResponse.user.id);
-     sessionStorage.setItem("userData", JSON.stringify(loginResponse.user));
-
-  // Get JWT tokens
-     const tokenRes = await fetch("http://18.188.140.218:8000/api/token/", {
-     method: "POST",
-     headers: { "Content-Type": "application/json" },
-     body: JSON.stringify({
-      username: formData.username!,
-      password: formData.password!
-     }),
-   });
-
-   if (tokenRes.ok) {
-     const tokenData = await tokenRes.json();
-     localStorage.setItem("accessToken", tokenData.access);
-     localStorage.setItem("refreshToken", tokenData.refresh);
-   } else {
-     console.error("Failed to get JWT tokens after signup");
-   }
-
-  // Redirect to dashboard
-    window.location.href = "/dashboard";
-
-      } catch (err: any) {
-          console.error("Registration error:", err);
-    
-         if (err.response?.data) {
-           const errorMessages = Object.entries(err.response.data)
-             .map(([field, errors]: [string, any]) => {
-           if (Array.isArray(errors)) {
-              return `${field}: ${errors.join(', ')}`
-           } else {
-              return `${field}: ${errors}`
-           }
-           })
-          .join('\n');
-           setError(`Registration failed:\n${errorMessages}`);
-        } else {
-         setError("Registration failed. Please try again.");
       }
-   }
-};
+
+      if (loginResponse.user) {
+        console.log("Auto-login successful", loginResponse.user);
+        sessionStorage.setItem("userId", loginResponse.user.id.toString());
+        sessionStorage.setItem("userData", JSON.stringify(loginResponse.user));
+      }
+
+      const tokenRes = await fetch("http://18.188.140.218:8000/api/token/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: formData.username!,
+          password: formData.password!
+        }),
+      });
+
+      if (tokenRes.ok) {
+        const tokenData = await tokenRes.json();
+        localStorage.setItem("accessToken", tokenData.access);
+        localStorage.setItem("refreshToken", tokenData.refresh);
+      } else {
+        console.error("Failed to get JWT tokens after signup");
+      }
+
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      if (err.response?.data) {
+        const errorMessages = Object.entries(err.response.data)
+          .map(([field, errors]: [string, any]) => {
+            return `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`;
+          })
+          .join('\n');
+        setError(`Registration failed:\n${errorMessages}`);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+    }
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-bl from-purple-500 to-blue-500">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-96 max-w-full mx-4">
@@ -139,31 +108,7 @@ const SignUpPage = () => {
         <div className="flex flex-col items-center">
           <img src="/logo.svg" alt="Logo" className="h-12 mb-6" />
           <h2 className="text-2xl font-semibold mb-6">Create Account</h2>
-          
-          {/* Role Selection */}
-          <div className="flex flex-col gap-4 mb-6 w-full">
-            <button 
-              type="button"
-              className={`w-full py-3 px-4 border rounded-lg transition-colors
-                ${formData.is_instructor 
-                  ? "bg-purple-600 text-white border-purple-600" 
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}`}
-              onClick={() => handleRoleSelect('instructor')}
-            >
-              I am an Instructor
-            </button>
-            <button 
-              type="button"
-              className={`w-full py-3 px-4 border rounded-lg transition-colors
-                ${formData.is_student 
-                  ? "bg-purple-600 text-white border-purple-600" 
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}`}
-              onClick={() => handleRoleSelect('student')}
-            >
-              I am a Student
-            </button>
-          </div>
-          
+
           <form onSubmit={handleSubmit} className="w-full space-y-4">
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
@@ -262,9 +207,7 @@ const SignUpPage = () => {
 
             <button
               type="submit"
-              className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors
-                disabled:bg-gray-300 disabled:cursor-not-allowed"
-              disabled={!formData.email || !formData.password || !formData.password_confirmation || (!formData.is_student && !formData.is_instructor)}
+              className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
             >
               Create Account
             </button>
@@ -272,8 +215,7 @@ const SignUpPage = () => {
 
           <p className="text-xs text-gray-500 mt-6 text-center">
             By creating an account, you agree to our{" "}
-            <a href="#" className="text-purple-600 hover:underline">Terms of Service</a>
-            {" "}and{" "}
+            <a href="#" className="text-purple-600 hover:underline">Terms of Service</a> and{" "}
             <a href="#" className="text-purple-600 hover:underline">Privacy Policy</a>.
           </p>
         </div>

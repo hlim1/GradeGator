@@ -7,8 +7,8 @@ import { apiFunctions } from "@/lib/api";
 const CreateAssignment = () => {
   const router = useRouter();
   const params = useParams();
-  const courseId = params.courseId; // Get courseId from route parameter
-  
+  const courseId = params.courseId;
+
   const [assignmentName, setAssignmentName] = useState("");
   const [autoGraderPoints, setAutoGraderPoints] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
@@ -35,8 +35,13 @@ const CreateAssignment = () => {
     setRubric(rubric.filter((_, i) => i !== index));
   };
 
+  const getMinReleaseDate = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 2);
+    return now.toISOString().slice(0, 16);
+  };
+
   const handleNext = async () => {
-    // Validate required fields
     if (!assignmentName.trim()) {
       alert("Please enter an assignment name");
       return;
@@ -55,10 +60,7 @@ const CreateAssignment = () => {
     }
 
     try {
-      // Create a shorter unique assignment ID
-      const shortId = Date.now().toString(36).slice(-6); // Convert timestamp to base36 and take last 6 chars
-      
-      // Create the assignment object according to the API schema
+      const shortId = Date.now().toString(36).slice(-6);
       const assignmentData = {
         assignment_id: `a${courseId}-${shortId}`,
         name: assignmentName,
@@ -70,20 +72,16 @@ const CreateAssignment = () => {
         timing: new Date(releaseDate).toISOString(),
         points: parseInt(autoGraderPoints, 10),
         due_date: new Date(dueDate).toISOString(),
-        release_date: new Date(releaseDate).toISOString().split('T')[0], // Format as YYYY-MM-DD
+        release_date: new Date(releaseDate).toISOString().split('T')[0],
         is_visible_to_students: true,
         is_manually_graded: enableManual,
         course: parseInt(courseId as string, 10)
       };
 
-      // Log the data being sent in a readable format
       console.log("Sending assignment data:", JSON.stringify(assignmentData, null, 2));
 
-      // Save to backend
       const savedAssignment = await apiFunctions.createAssignment(assignmentData);
-      console.log("Assignment created:", savedAssignment);
 
-      // Store additional data in sessionStorage for the autograder configuration
       const configData = {
         assignmentName,
         autoGraderPoints,
@@ -98,30 +96,21 @@ const CreateAssignment = () => {
         courseId,
         assignmentId: savedAssignment.id
       };
-      
+
       sessionStorage.setItem("assignmentData", JSON.stringify(configData));
       router.push(`/course/${courseId}/configure-autograder`);
     } catch (error: any) {
       console.error("Error creating assignment:", error);
-      
-      // More detailed error logging
+
       if (error.response) {
-        console.error("Error response data:", error.response.data);
-        console.error("Error response status:", error.response.status);
-        console.error("Error response headers:", error.response.headers);
-        
-        // Show detailed error message from server if available
-        const errorMessage = error.response.data?.detail || 
-                           Object.entries(error.response.data || {}).map(([key, value]) => 
-                             `${key}: ${value}`
-                           ).join('\n');
-        
+        const errorMessage = error.response.data?.detail ||
+          Object.entries(error.response.data || {}).map(([key, value]) =>
+            `${key}: ${value}`
+          ).join('\n');
         alert(`Failed to create assignment:\n${errorMessage}`);
       } else if (error.request) {
-        console.error("Error request:", error.request);
         alert("Network error - no response received from server");
       } else {
-        console.error("Error message:", error.message);
         alert(`Error: ${error.message}`);
       }
     }
@@ -130,7 +119,7 @@ const CreateAssignment = () => {
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg">
       <h1 className="text-2xl font-semibold mb-4">Create Assignment</h1>
-      
+
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium">Assignment Name *</label>
@@ -168,8 +157,22 @@ const CreateAssignment = () => {
           <input
             type="datetime-local"
             className="w-full mt-1 p-2 border rounded-md"
+            min={getMinReleaseDate()}
             value={releaseDate}
-            onChange={(e) => setReleaseDate(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              const nowPlus2Min = new Date(getMinReleaseDate());
+              if (new Date(val) < nowPlus2Min) {
+                const adjusted = nowPlus2Min.toISOString().slice(0, 16);
+                setReleaseDate(adjusted);
+              } else {
+                setReleaseDate(val);
+              }
+              if (dueDate && new Date(dueDate) <= new Date(val)) {
+                const adjustedDue = new Date(new Date(val).getTime() + 60 * 1000);
+                setDueDate(adjustedDue.toISOString().slice(0, 16));
+              }
+            }}
           />
         </div>
 
@@ -178,8 +181,41 @@ const CreateAssignment = () => {
           <input
             type="datetime-local"
             className="w-full mt-1 p-2 border rounded-md"
+            min={releaseDate || getMinReleaseDate()}
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (releaseDate && new Date(val) <= new Date(releaseDate)) {
+                const adjusted = new Date(new Date(releaseDate).getTime() + 60 * 1000);
+                setDueDate(adjusted.toISOString().slice(0, 16));
+              } else {
+                setDueDate(val);
+              }
+
+              if (lateDueDate && new Date(lateDueDate) <= new Date(val)) {
+                const adjustedLate = new Date(new Date(val).getTime() + 60 * 1000);
+                setLateDueDate(adjustedLate.toISOString().slice(0, 16));
+              }
+            }}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Late Due Date</label>
+          <input
+            type="datetime-local"
+            className="w-full mt-1 p-2 border rounded-md"
+            min={dueDate || getMinReleaseDate()}
+            value={lateDueDate}
+            onChange={(e) => {
+              const newLateDue = e.target.value;
+              if (dueDate && new Date(newLateDue) <= new Date(dueDate)) {
+                const adjusted = new Date(new Date(dueDate).getTime() + 60 * 1000);
+                setLateDueDate(adjusted.toISOString().slice(0, 16));
+              } else {
+                setLateDueDate(newLateDue);
+              }
+            }}
           />
         </div>
 

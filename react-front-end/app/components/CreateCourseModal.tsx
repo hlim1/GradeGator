@@ -49,7 +49,7 @@ export default function CreateCourseModal({ isOpen, onClose, onCourseCreated }: 
         code: courseCode
       };
       const response = await apiFunctions.createCourse(courseData);
-      await apiFunctions.addUserCourse(userId, response.id);
+      await apiFunctions.addUserCourse(userId, response.id, "instructor");
       onClose();
       if (onCourseCreated) {
         onCourseCreated();

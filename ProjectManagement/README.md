@@ -127,5 +127,8 @@
   - Do we need an extra table(s) in the database, or can we utilize the existing ones and simply (maybe not so simple) modify the front-end? 
 
 ### Week 7
+- Fix the updating autograder issue.
+- Role-by-course implementation.
+- Re-run the demo on Thursday to set up additional TODOs.
 
 ### Week 8

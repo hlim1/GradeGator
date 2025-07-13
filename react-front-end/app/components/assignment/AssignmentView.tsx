@@ -49,8 +49,8 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   const [rubricFile, setRubricFile] = useState<File | null>(null);
 
   // Outline states
-  const [questions, setQuestions] = useState<Question[]>([]);
-
+  const [questions, setQuestions] = useState<Question[]>(assignment.questions || []);
+  console.log(questions);
   const router = useRouter();
 
   // Fetch assignment and courseId's from path window
@@ -70,7 +70,6 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
     const fetchSubmissions = async () => {
       try {
         const data = await apiFunctions.getAssignmentSubmissions(assignment.id);
-        console.log(data);
         setSubmissions(data);
       } catch (error) {
         console.error('Error fetching assignments:', error);

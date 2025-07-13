@@ -11,6 +11,19 @@ interface AssignmentViewProps {
   assignment: Assignment;
 }
 
+interface Rubric {
+  description: string;
+  points: number;
+  add: boolean;
+  subtract: boolean;
+};
+
+interface Question {
+  title: string;
+  points: number;
+  rubrics: Rubric[];
+};
+
 export default function AssignmentView({ assignment }: AssignmentViewProps) {
   //Submission states
   const [courseId, setCourseId] = useState<string | null>(null);
@@ -34,6 +47,9 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
 
   // Autograder states
   const [rubricFile, setRubricFile] = useState<File | null>(null);
+
+  // Outline states
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   const router = useRouter();
 
@@ -104,6 +120,18 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
     }
   };
   */
+
+  const handleAddQuestion = async (assignment: Assignment) => {
+    try {
+      
+      // Remove the deleted assignment from the state
+      setAssignments(prev => prev.filter(a => a.id !== assignment.id));
+      setAssignmentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      alert('Failed to delete assignment. Please try again.');
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -377,12 +405,166 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         );
       case 'outline':
         return (
-          <div className="p-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Course Documents</h2>
-            <p className="text-gray-600 mt-2">Documents content coming soon...</p>
+          <div className="space-y-6">
+            <p className="text-gray-600">
+              Create questions and assign points. Then add rubric items for grading criteria.
+            </p>
+
+            <div className="border rounded p-4 bg-white shadow">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Questions</h3>
+              <div className="space-y-4">
+                {questions.map((q, qIdx) => (
+                  <div key={qIdx} className="border p-4 bg-gray-100 rounded">
+                    <input
+                      className="font-bold text-lg text-gray-800 mb-2 w-full"
+                      placeholder="Question title"
+                      value={q.title}
+                      onChange={e => {
+                        const newQs = [...questions];
+                        newQs[qIdx].title = e.target.value;
+                        setQuestions(newQs);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Points"
+                      className="w-1/3 border px-2 py-1 mb-2"
+                      value={q.points}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        const newQs = [...questions];
+                        newQs[qIdx].points = isNaN(val) ? 0 : val;
+                        setQuestions(newQs);
+                      }}
+                    />
+
+                    <h4 className="text-md font-medium mt-2">Rubrics</h4>
+                    {q.rubrics.map((r, rIdx) => (
+                      <div key={rIdx} className="border border-gray-400 rounded p-2 ml-4 mb-2">
+                        <input
+                          className="border px-2 py-1 w-full mb-1"
+                          placeholder="Rubric description"
+                          value={r.description}
+                          onChange={e => {
+                            const newQs = [...questions];
+                            newQs[qIdx].rubrics[rIdx].description = e.target.value;
+                            setQuestions(newQs);
+                          }}
+                        />
+                        <input
+                          type="number"
+                          className="border w-1/4 mb-1 px-2 py-1"
+                          placeholder="Points"
+                          value={r.points}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            const newQs = [...questions];
+
+                            const totalOtherRubrics = newQs[qIdx].rubrics.reduce((sum, rub, idx) => {
+                              return idx === rIdx ? sum : sum + rub.points;
+                            }, 0);
+
+                            const maxAllowed = newQs[qIdx].points - totalOtherRubrics;
+
+                            // Clamp to max allowed
+                            newQs[qIdx].rubrics[rIdx].points = isNaN(val) ? 0 : Math.min(val, maxAllowed);
+
+                            setQuestions(newQs);
+                          }}
+                        />
+                        <div className="flex gap-4 mb-2">
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              checked={r.add}
+                              onChange={e => {
+                                const newQs = [...questions];
+                                newQs[qIdx].rubrics[rIdx].add = e.target.checked;
+                                if (e.target.checked) newQs[qIdx].rubrics[rIdx].subtract = false;
+                                setQuestions(newQs);
+                              }}
+                            />
+                            Add
+                          </label>
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              checked={r.subtract}
+                              onChange={e => {
+                                const newQs = [...questions];
+                                newQs[qIdx].rubrics[rIdx].subtract = e.target.checked;
+                                if (e.target.checked) newQs[qIdx].rubrics[rIdx].add = false;
+                                setQuestions(newQs);
+                              }}
+                            />
+                            Subtract
+                          </label>
+                          <button
+                            className="text-red-600 text-sm"
+                            onClick={() => {
+                              const newQs = [...questions];
+                              newQs[qIdx].rubrics.splice(rIdx, 1);
+                              setQuestions(newQs);
+                            }}
+                          >
+                            Delete Rubric
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      className="text-blue-600 mt-2"
+                      onClick={() => {
+                        const newQs = [...questions];
+                        newQs[qIdx].rubrics.push({ description: '', points: 0, add: false, subtract: false });
+                        setQuestions(newQs);
+                      }}
+                    >
+                      + Add Rubric
+                    </button>
+
+                    <button
+                      className="text-red-600 mt-2 ml-4"
+                      onClick={() => {
+                        const newQs = [...questions];
+                        newQs.splice(qIdx, 1);
+                        setQuestions(newQs);
+                      }}
+                    >
+                      Delete Question
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                  onClick={() => {
+                    setQuestions(prev => [...prev, { title: '', points: 0, rubrics: [] }]);
+                  }}
+                >
+                  + Add Question
+                </button>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await apiFunctions.updateAssignmentOutline(assignment.id, { outline: questions });
+                      alert('Outline saved!');
+                    } catch (err) {
+                      console.error('Failed to save outline:', err);
+                      alert('Failed to save outline.');
+                    }
+                  }}
+                  className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Save Outline
+                </button>
+              </div>
+            </div>
           </div>
         );
-    }
+      }
   };
 
   return (

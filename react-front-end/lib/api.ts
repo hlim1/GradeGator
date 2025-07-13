@@ -314,6 +314,14 @@ export const apiFunctions = {
     return response.data;
   },
 
+  changeUserRole: async (courseId: string, userId: number, requestedRole: string) => {
+    const res = await api.post(`/courses/${courseId}/change-role/`, {
+      user_id: userId,
+      requested_role: requestedRole,
+    });
+    return res.data;
+  },
+
   getInstructorDetails: async (instructorId: number): Promise<any> => {
     const response = await api.get(`/instructors/${instructorId}/`);
     return response.data;

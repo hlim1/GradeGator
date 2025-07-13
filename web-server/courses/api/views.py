@@ -68,6 +68,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='change-role')
     def change_role(self, request, pk=None):
+        print("DEBUG:", request.data)
         course = self.get_object()
         user_id = request.data.get('user_id')
         requested_role = request.data.get('requested_role')
@@ -105,9 +106,9 @@ class CourseViewSet(viewsets.ModelViewSet):
         role_instance, _ = TargetModel.objects.get_or_create(
             user=user,
             defaults={
-                id_field: f"{prefix}{user_id_str.zfill(6)}",
-                'name': user.name,
-                'preferred_name': user.preferred_name,
+                 id_field: f"{prefix}{user_id_str.zfill(6)}",
+                 'name': user.get_full_name() or user.username,
+                 'preferred_name': user.preferred_name if hasattr(user, 'preferred_name') else user.get_full_name() or user.username,
             }
         )
         role_instance.courses.add(course)
@@ -116,6 +117,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def add_user(self, request, pk=None):
+        print("DEBUG ADD: ", request.data)
         course = self.get_object()
         user_id = request.data.get('user_id')
         role = request.data.get('role')
@@ -144,10 +146,10 @@ class CourseViewSet(viewsets.ModelViewSet):
                     'department': 'Not specified'
                 }
             )
-            if not course.instructors.filter(user_id=user_id).exists():
-                course.instructors.add(instructor)
-                return Response({'status': 'instructor added', 'email': email})
-            return Response({'error': 'Instructor already added'}, status=status.HTTP_400_BAD_REQUEST)
+            if course.instructors.filter(user_id=user_id).exists():
+                return Response({'status': 'already enrolled as instructor', 'email': email})
+            course.instructors.add(instructor)
+            return Response({'status': 'instructor added', 'email': email})
 
         elif role == 'student':
             student, _ = Student.objects.get_or_create(
@@ -158,10 +160,10 @@ class CourseViewSet(viewsets.ModelViewSet):
                     'preferred_name': preferred_name
                 }
             )
-            if not course.students.filter(user_id=user_id).exists():
-                course.students.add(student)
-                return Response({'status': 'student added', 'email': email})
-            return Response({'error': 'Student already added'}, status=status.HTTP_400_BAD_REQUEST)
+            if course.students.filter(user_id=user_id).exists():
+                return Response({'status': 'already enrolled as student', 'email': email})
+            course.students.add(student)
+            return Response({'status': 'student added', 'email': email})
 
         return Response({'error': 'Invalid role value. Must be "instructor" or "student".'}, status=400)
 

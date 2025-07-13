@@ -95,7 +95,7 @@ class GradeViewSet(viewsets.ModelViewSet):
         defaults = {
             'score': nested.get('total'),
             'feedback': json.dumps(nested),
-            'is_finalized': True,
+            'is_finalized': False,
             'submitted_files_json': submitted_files,
         }
 

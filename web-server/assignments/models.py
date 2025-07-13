@@ -14,8 +14,6 @@ def submission_upload_path(instance, filename):
         f'assignment{assignment_id}_user{student_id}',
         filename
     )
-    
-    
 
 def rubric_upload_path(instance, filename):
     assignment_id = instance.assignment.id

@@ -3,6 +3,7 @@ from rest_framework import viewsets
 from assignments.models import Assignment, Submission, GradingRubric
 from .serializers import AssignmentSerializer, SubmissionSerializer, GradingRubricSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -28,6 +29,19 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     """
     queryset = Assignment.objects.all()
     serializer_class = AssignmentSerializer
+
+    @action(detail=True, methods=['post'], url_path='outline')
+    def outline(self, request, pk=None):
+        assignment = self.get_object()
+        outline = request.data.get('outline')
+
+        if not isinstance(outline, list):
+            return Response({'error': 'Outline must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        assignment.questions = outline
+        assignment.save()
+
+        return Response(self.get_serializer(assignment).data, status=status.HTTP_200_OK)
 
 @extend_schema(
     description="Upload a submission with one or more files",

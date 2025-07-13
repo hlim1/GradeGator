@@ -392,7 +392,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   }
                 }}
               >
-                <input type="file" onChange={(e) => setRubricFile(e.target.files?.[0] || null)} />
+                <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" onChange={(e) => setRubricFile(e.target.files?.[0] || null)} />
                 <button
                   type="submit"
                   className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"

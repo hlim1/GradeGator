@@ -29,7 +29,6 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   const [courseId, setCourseId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'submissions' | 'settings' | 'autograder' | 'outline'>('submissions');
-  const [submissionStatus, setSubmissionStatus] = useState<'ungraded' | 'graded' | 'modified' | 'others'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -78,25 +77,12 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
       }
     };
 
-    fetchSubmissions();
-  }, [assignment.id]);
-  
-    const filteredSubmissions = submissions.filter(submission => {
-    const matchesName = submission.student_detail?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = submission.status === submissionStatus || submissionStatus === 'all';
-    return matchesName && matchesStatus;
-  });
-  
-  const counts = {
-    //should count the ones that have an unfinalized grade
-    ungraded: submissions.filter(a => a.status.toLowerCase().includes('ungraded')).length,
-    //should count the ones that have a a finalized grade
-    graded: submissions.filter(a => a.status.toLowerCase().includes('graded')).length,
-    //modified: count the ones with student accomidations
-    modified: submissions.filter(a => a.status.toLowerCase().includes('modified')).length,
-    //should count as non autograder activities for example
-    others: submissions.filter(a => !a.status.toLowerCase().includes('graded') && !a.status.toLowerCase().includes('modified')).length,
-  };
+      fetchSubmissions();
+    }, [assignment.id]);
+
+  const filteredSubmissions = submissions.filter(submission =>
+    submission.student_detail?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleCheckboxChange = (submissionId: number) => {
     setSelectedSubmissions(prev =>
@@ -140,57 +126,6 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
       case 'submissions':
         return (
           <>
-            <div className="mb-6 flex gap-4 border-b">
-              <button
-                onClick={() => setSubmissionStatus('ungraded')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'ungraded' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Ungraded
-                <span className="ml-1 text-sm text-gray-500">{counts.ungraded}</span>
-                {submissionStatus === 'ungraded' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-              <button
-                onClick={() => setSubmissionStatus('graded')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'graded' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Graded
-                <span className="ml-1 text-sm text-gray-500">{counts.graded}</span>
-                {submissionStatus === 'graded' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-              <button
-                onClick={() => setSubmissionStatus('modified')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'modified' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Modified
-                <span className="ml-1 text-sm text-gray-500">{counts.modified}</span>
-                {submissionStatus === 'modified' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-              <button
-                onClick={() => setSubmissionStatus('others')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'others' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Others
-                <span className="ml-1 text-sm text-gray-500">{counts.others}</span>
-                {submissionStatus === 'others' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-            </div>
-
             <div className="bg-white rounded-lg shadow">
               <div className="grid grid-cols-8 gap-4 p-4 border-b bg-gray-50">
                 <div className="flex items-center">

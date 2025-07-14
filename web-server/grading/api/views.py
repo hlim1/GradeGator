@@ -92,10 +92,21 @@ class GradeViewSet(viewsets.ModelViewSet):
         uploaded_file = request.FILES.get('file')
         print("Uploaded file:", uploaded_file)
 
+        try:
+            submission = Submission.objects.select_related('assignment').get(id=submission_id)
+        except Submission.DoesNotExist:
+            return Response({'error': 'submission not found'}, status=404)
+
+        assignment = submission.assignment
+        is_manual = assignment.is_manually_graded
+
+        # Determine if this submission should be finalized
+        is_finalized = not is_manual  # Finalized only if no manual grading needed
+
         defaults = {
             'score': nested.get('total'),
             'feedback': json.dumps(nested),
-            'is_finalized': False,
+            'is_finalized': is_finalized,
             'submitted_files_json': submitted_files,
         }
 

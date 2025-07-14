@@ -109,18 +109,29 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-id')
 
     def list(self, request, *args, **kwargs):
-        assignment_id = request.query_params.get("assignment")
-        student_id = request.query_params.get("student")
+      assignment_id = request.query_params.get("assignment")
+      student_id = request.query_params.get("student")
 
-        if assignment_id and student_id:
-            submission = self.get_queryset().first()  # newest submission for that student and assignment
-            if submission:
-                serializer = self.get_serializer(submission)
-                return Response(serializer.data)
-            else:
-                return Response({"detail": "No submission found."}, status=404)
+      # If requesting specific student's latest submission
+      if assignment_id and student_id:
+          submission = self.get_queryset().first()
+          if submission:
+              serializer = self.get_serializer(submission)
+              return Response(serializer.data)
+          else:
+              return Response({"detail": "No submission found."}, status=404)
 
-        return super().list(request, *args, **kwargs)
+      # Else, return only the latest submission per student for the assignment
+      if assignment_id:
+          all_submissions = self.get_queryset()
+          latest_per_student = {}
+          for submission in all_submissions:
+              if submission.student_id not in latest_per_student:
+                  latest_per_student[submission.student_id] = submission
+          serializer = self.get_serializer(latest_per_student.values(), many=True)
+          return Response(serializer.data)
+
+      return super().list(request, *args, **kwargs)
 
 class SubmissionUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)

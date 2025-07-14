@@ -108,7 +108,6 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
 
   const handleAddQuestion = async (assignment: Assignment) => {
     try {
-      
       // Remove the deleted assignment from the state
       setAssignments(prev => prev.filter(a => a.id !== assignment.id));
       setAssignmentToDelete(null);
@@ -125,7 +124,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
     switch (activeTab) {
       case 'submissions':
         return (
-          <>
+          <div className="pt-12">
             <div className="bg-white rounded-lg shadow">
               <div className="grid grid-cols-8 gap-4 p-4 border-b bg-gray-50">
                 <div className="flex items-center">
@@ -205,7 +204,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 ))
               )}
             </div>
-          </>
+          </div>
         );
       case 'settings':
         return (

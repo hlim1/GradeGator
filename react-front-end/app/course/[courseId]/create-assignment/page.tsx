@@ -82,6 +82,22 @@ const CreateAssignment = () => {
 
       const savedAssignment = await apiFunctions.createAssignment(assignmentData);
 
+      if (enableManual && rubric.length > 0) {
+        const defaultQuestion = {
+          title: "Question 1",
+          points: rubric.reduce((sum, r) => sum + parseFloat(r.points || '0'), 0),
+          rubrics: rubric.map(r => ({
+            description: r.description,
+            points: parseFloat(r.points || '0'),
+            add: true,
+            subtract: false,
+          }))
+        };
+
+        await apiFunctions.updateAssignmentOutline(savedAssignment.id, { outline: [defaultQuestion] })
+
+      }
+
       const configData = {
         assignmentName,
         autoGraderPoints,

@@ -28,7 +28,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   //Submission states
   const [courseId, setCourseId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'submissions' | 'settings' | 'autograder' | 'outline'>('submissions');
+  const [activeTab, setActiveTab] = useState<'submissions' | 'settings' | 'autograder' | 'rubric'>('submissions');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -47,7 +47,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   // Autograder states
   const [rubricFile, setRubricFile] = useState<File | null>(null);
 
-  // Outline states
+  // Rubric states
   const [questions, setQuestions] = useState<Question[]>(assignment.questions || []);
   console.log(questions);
   const router = useRouter();
@@ -121,7 +121,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   };
 
   const renderContent = () => {
-    if (activeTab === 'outline' && !is_manually_graded) {
+    if (activeTab === 'rubric' && !is_manually_graded) {
       return <div className="p-4 text-gray-600">Manual grading is disabled for this assignment.</div>;
     }
     switch (activeTab) {
@@ -235,7 +235,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     console.error(error);
                     alert('Update failed.');
                   }
-                  // If manually graded was turned OFF, delete the outline
+                  // If manually graded was turned OFF, delete the rubric or 'outline'
                   if (!is_manually_graded) {
                     await apiFunctions.updateAssignmentOutline(assignment.id, { outline: [] });
                     setQuestions([]); // Reset frontend state
@@ -352,7 +352,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
               </form>
           </div>
         );
-      case 'outline':
+      case 'rubric':
         return (
           <div className="space-y-4">
             <p className="text-gray-600">
@@ -499,15 +499,15 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   onClick={async () => {
                     try {
                       await apiFunctions.updateAssignmentOutline(assignment.id, { outline: questions });
-                      alert('Outline saved!');
+                      alert('Rubric saved!');
                     } catch (err) {
-                      console.error('Failed to save outline:', err);
-                      alert('Failed to save outline.');
+                      console.error('Failed to save rubric:', err);
+                      alert('Failed to save rubric.');
                     }
                   }}
                   className="mt-2 mx-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                 >
-                  Save Outline
+                  Save
                 </button>
               </div>
             </div>
@@ -524,7 +524,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         setActiveTab={setActiveTab}
       />
       <main className="flex-1 p-8">
-        {activeTab === 'outline' && !is_manually_graded ? (
+        {activeTab === 'rubric' && !is_manually_graded ? (
            <div className="mb-8 flex flex-col">
               <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
               <div className="py-12 text-gray-500">This assignment is not manually graded.</div>

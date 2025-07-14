@@ -132,3 +132,15 @@
 - Re-run the demo on Thursday to set up additional TODOs.
 
 ### Week 8
+- Build a formal document that lays out _all_ the functionalities that are working.
+  - Include all the screenshots or make a video.
+  - List the future TODOs, i.e., functionalities that must be implemented.
+- Late submission option change.
+  - Click Late submission allowed will allow the user to set the late submission date.
+- Name change: Rubric -> Autograder
+- Date settings error in the Settings page.
+- Display the autograder uploaded in the Autograder page.
+- Name change: Outline -> Rubric.
+- Instructors need to be able to grade the submission's manual rubric.
+- Instructor adding users to the course.
+- Set the owner of the course, and only the instructors can change the roles.

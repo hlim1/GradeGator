@@ -39,11 +39,20 @@ export default function SubmittedFeedbackPage() {
     const parts = window.location.pathname.split('/');
     const course = parts[2];
     const assignment = parts[4];
-    const user = sessionStorage.getItem("userId");
 
-    setUserId(user);
     setCourseId(course);
     setAssignmentId(assignment);
+
+    const userIdFromSession = sessionStorage.getItem("studentIdForFeedback");
+
+    if (userIdFromSession) {
+      setUserId(userIdFromSession);
+    } else {
+      // fallback for students
+      const studentId = sessionStorage.getItem("userId");
+      setUserId(studentId);
+    }
+
   }, []);
 
   useEffect(() => {

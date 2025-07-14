@@ -61,7 +61,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
 
     setUserId(userNumber);
     setCourseId(courseNumber);
-    console.log("useEffect 1 triggered");
+
+    if (sessionStorage.getItem("studentIdForFeedback")) {
+      sessionStorage.removeItem("studentIdForFeedback");
+    }
   }, []);
 
   useEffect(() => {
@@ -159,7 +162,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   <div
                     key={submission.id}
                     className="grid grid-cols-8 gap-4 p-4 border-b hover:bg-gray-50 cursor-pointer"
-                    onClick={() => router.push(`/course/${courseId}/assignment/${assignment.id}/submitted-feedback`)}
+                    onClick={() => {
+                      sessionStorage.setItem("studentIdForFeedback", submission.student);
+                      router.push(`/course/${courseId}/assignment/${assignment.id}/submitted-feedback`);
+                    }}
                   >
                     <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input

@@ -251,8 +251,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     value={grade_method}
                     onChange={(e) => setGradeMethod(e.target.value)}
                   >
-                    <option value="points">Points Based</option>
-                    <option value="pass_fail">Pass/Fail</option>
+                    <option value="POINTS">Points Based</option>
+                    <option value="PERCENT">Percentage Based</option>
+                    <option value="LETTER">Letter Based</option>
+                    <option value="STANDARDS">Standards Based</option>
                   </select>
                 </div>
                 <div>

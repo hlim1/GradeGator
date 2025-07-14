@@ -133,6 +133,9 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   };
 
   const renderContent = () => {
+    if (activeTab === 'outline' && !is_manually_graded) {
+      return <div className="p-4 text-gray-600">Manual grading is disabled for this assignment.</div>;
+    }
     switch (activeTab) {
       case 'submissions':
         return (
@@ -271,7 +274,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         );
       case 'settings':
         return (
-          <div className="p-4 max-w-xl">
+          <div className="py-4 max-w-xl">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Edit Assignment Settings</h2>
               <form
                 className="space-y-4"
@@ -291,6 +294,11 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   } catch (error) {
                     console.error(error);
                     alert('Update failed.');
+                  }
+                  // If manually graded was turned OFF, delete the outline
+                  if (!is_manually_graded) {
+                    await apiFunctions.updateAssignmentOutline(assignment.id, { outline: [] });
+                    setQuestions([]); // Reset frontend state
                   }
                 }}
               >
@@ -358,7 +366,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 </div>
                 <button
                   type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                 >
                   Save Changes
                 </button>
@@ -367,7 +375,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         );
       case 'autograder':
           return (
-            <div className="p-4 max-w-xl">
+            <div className="py-4 max-w-xl">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Upload Grading Rubric</h2>
               <form
                 onSubmit={async (e) => {
@@ -395,7 +403,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" onChange={(e) => setRubricFile(e.target.files?.[0] || null)} />
                 <button
                   type="submit"
-                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                 >
                   Upload
                 </button>
@@ -404,14 +412,14 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         );
       case 'outline':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <p className="text-gray-600">
               Create questions and assign points. Then add rubric items for grading criteria.
             </p>
 
             <div className="border rounded p-4 bg-white shadow">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Questions</h3>
-              <div className="space-y-4">
+              <div>
                 {questions.map((q, qIdx) => (
                   <div key={qIdx} className="border p-4 bg-gray-100 rounded">
                     <input
@@ -537,7 +545,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 ))}
 
                 <button
-                  className="bg-green-600 text-white px-4 py-2 rounded"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg"
                   onClick={() => {
                     setQuestions(prev => [...prev, { title: '', points: 0, rubrics: [] }]);
                   }}
@@ -555,7 +563,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                       alert('Failed to save outline.');
                     }
                   }}
-                  className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  className="mt-2 mx-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                 >
                   Save Outline
                 </button>
@@ -574,27 +582,35 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         setActiveTab={setActiveTab}
       />
       <main className="flex-1 p-8">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
-          </div>
-          {activeTab === 'assignments' && (
-            <div className="w-96 relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search submissions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
+        {activeTab === 'outline' && !is_manually_graded ? (
+           <div className="mb-8 flex flex-col">
+              <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
+              <div className="py-12 text-gray-500">This assignment is not manually graded.</div>
+           </div>
+        ) : (
+          <>
+            {/* Only show search bar in submissions tab */}
+            <div className="mb-8 flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
+              {activeTab === 'submissions' && (
+                <div className="w-96 relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search submissions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {renderContent()}
+            {renderContent()}
+          </>
+        )}
       </main>
 
       {/* Delete Confirmation Modal */}

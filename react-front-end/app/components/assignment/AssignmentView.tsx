@@ -11,12 +11,24 @@ interface AssignmentViewProps {
   assignment: Assignment;
 }
 
+interface Rubric {
+  description: string;
+  points: number;
+  add: boolean;
+  subtract: boolean;
+};
+
+interface Question {
+  title: string;
+  points: number;
+  rubrics: Rubric[];
+};
+
 export default function AssignmentView({ assignment }: AssignmentViewProps) {
   //Submission states
   const [courseId, setCourseId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'submissions' | 'settings' | 'autograder' | 'outline'>('submissions');
-  const [submissionStatus, setSubmissionStatus] = useState<'ungraded' | 'graded' | 'modified' | 'others'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -35,6 +47,9 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   // Autograder states
   const [rubricFile, setRubricFile] = useState<File | null>(null);
 
+  // Outline states
+  const [questions, setQuestions] = useState<Question[]>(assignment.questions || []);
+  console.log(questions);
   const router = useRouter();
 
   // Fetch assignment and courseId's from path window
@@ -46,7 +61,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
 
     setUserId(userNumber);
     setCourseId(courseNumber);
-    console.log("useEffect 1 triggered");
+
+    if (sessionStorage.getItem("studentIdForFeedback")) {
+      sessionStorage.removeItem("studentIdForFeedback");
+    }
   }, []);
 
   useEffect(() => {
@@ -54,7 +72,6 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
     const fetchSubmissions = async () => {
       try {
         const data = await apiFunctions.getAssignmentSubmissions(assignment.id);
-        console.log(data);
         setSubmissions(data);
       } catch (error) {
         console.error('Error fetching assignments:', error);
@@ -63,25 +80,12 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
       }
     };
 
-    fetchSubmissions();
-  }, [assignment.id]);
-  
-    const filteredSubmissions = submissions.filter(submission => {
-    const matchesName = submission.student_detail?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = submission.status === submissionStatus || submissionStatus === 'all';
-    return matchesName && matchesStatus;
-  });
-  
-  const counts = {
-    //should count the ones that have an unfinalized grade
-    ungraded: submissions.filter(a => a.status.toLowerCase().includes('ungraded')).length,
-    //should count the ones that have a a finalized grade
-    graded: submissions.filter(a => a.status.toLowerCase().includes('graded')).length,
-    //modified: count the ones with student accomidations
-    modified: submissions.filter(a => a.status.toLowerCase().includes('modified')).length,
-    //should count as non autograder activities for example
-    others: submissions.filter(a => !a.status.toLowerCase().includes('graded') && !a.status.toLowerCase().includes('modified')).length,
-  };
+      fetchSubmissions();
+    }, [assignment.id]);
+
+  const filteredSubmissions = submissions.filter(submission =>
+    submission.student_detail?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleCheckboxChange = (submissionId: number) => {
     setSelectedSubmissions(prev =>
@@ -105,62 +109,25 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   };
   */
 
+  const handleAddQuestion = async (assignment: Assignment) => {
+    try {
+      // Remove the deleted assignment from the state
+      setAssignments(prev => prev.filter(a => a.id !== assignment.id));
+      setAssignmentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      alert('Failed to delete assignment. Please try again.');
+    }
+  };
+
   const renderContent = () => {
+    if (activeTab === 'outline' && !is_manually_graded) {
+      return <div className="p-4 text-gray-600">Manual grading is disabled for this assignment.</div>;
+    }
     switch (activeTab) {
       case 'submissions':
         return (
-          <>
-            <div className="mb-6 flex gap-4 border-b">
-              <button
-                onClick={() => setSubmissionStatus('ungraded')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'ungraded' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Ungraded
-                <span className="ml-1 text-sm text-gray-500">{counts.ungraded}</span>
-                {submissionStatus === 'ungraded' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-              <button
-                onClick={() => setSubmissionStatus('graded')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'graded' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Graded
-                <span className="ml-1 text-sm text-gray-500">{counts.graded}</span>
-                {submissionStatus === 'graded' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-              <button
-                onClick={() => setSubmissionStatus('modified')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'modified' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Modified
-                <span className="ml-1 text-sm text-gray-500">{counts.modified}</span>
-                {submissionStatus === 'modified' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-              <button
-                onClick={() => setSubmissionStatus('others')}
-                className={`px-4 py-2 relative ${
-                  submissionStatus === 'others' ? 'text-green-600' : 'text-gray-600'
-                }`}
-              >
-                Others
-                <span className="ml-1 text-sm text-gray-500">{counts.others}</span>
-                {submissionStatus === 'others' && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600" />
-                )}
-              </button>
-            </div>
-
+          <div className="pt-12">
             <div className="bg-white rounded-lg shadow">
               <div className="grid grid-cols-8 gap-4 p-4 border-b bg-gray-50">
                 <div className="flex items-center">
@@ -195,7 +162,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   <div
                     key={submission.id}
                     className="grid grid-cols-8 gap-4 p-4 border-b hover:bg-gray-50 cursor-pointer"
-                    onClick={() => router.push(`/course/${courseId}/assignment/${assignment.id}/submitted-feedback`)}
+                    onClick={() => {
+                      sessionStorage.setItem("studentIdForFeedback", submission.student);
+                      router.push(`/course/${courseId}/assignment/${assignment.id}/submitted-feedback`);
+                    }}
                   >
                     <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -240,11 +210,11 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 ))
               )}
             </div>
-          </>
+          </div>
         );
       case 'settings':
         return (
-          <div className="p-4 max-w-xl">
+          <div className="py-4 max-w-xl">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Edit Assignment Settings</h2>
               <form
                 className="space-y-4"
@@ -265,6 +235,11 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     console.error(error);
                     alert('Update failed.');
                   }
+                  // If manually graded was turned OFF, delete the outline
+                  if (!is_manually_graded) {
+                    await apiFunctions.updateAssignmentOutline(assignment.id, { outline: [] });
+                    setQuestions([]); // Reset frontend state
+                  }
                 }}
               >
                 <div>
@@ -282,8 +257,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     value={grade_method}
                     onChange={(e) => setGradeMethod(e.target.value)}
                   >
-                    <option value="points">Points Based</option>
-                    <option value="pass_fail">Pass/Fail</option>
+                    <option value="POINTS">Points Based</option>
+                    <option value="PERCENT">Percentage Based</option>
+                    <option value="LETTER">Letter Based</option>
+                    <option value="STANDARDS">Standards Based</option>
                   </select>
                 </div>
                 <div>
@@ -331,7 +308,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 </div>
                 <button
                   type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                 >
                   Save Changes
                 </button>
@@ -340,7 +317,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         );
       case 'autograder':
           return (
-            <div className="p-4 max-w-xl">
+            <div className="py-4 max-w-xl">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Upload Grading Rubric</h2>
               <form
                 onSubmit={async (e) => {
@@ -350,9 +327,14 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     return;
                   }
                   const formData = new FormData();
-                  formData.append('rubric', rubricFile);
+
+                  // Make sure to use exact field names from the schema
+                  formData.append('rubric_file', rubricFile);
+                  formData.append('instructor', userId.toString());
+                  formData.append('assignment', assignment.id.toString());
+
                   try {
-                    await apiFunctions.uploadRubricFile(assignment.id, formData);
+                    await apiFunctions.uploadRubric(formData);
                     alert('Rubric uploaded!');
                   } catch (err) {
                     console.error(err);
@@ -360,10 +342,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   }
                 }}
               >
-                <input type="file" onChange={(e) => setRubricFile(e.target.files?.[0] || null)} />
+                <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" onChange={(e) => setRubricFile(e.target.files?.[0] || null)} />
                 <button
                   type="submit"
-                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                 >
                   Upload
                 </button>
@@ -372,12 +354,166 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         );
       case 'outline':
         return (
-          <div className="p-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Course Documents</h2>
-            <p className="text-gray-600 mt-2">Documents content coming soon...</p>
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Create questions and assign points. Then add rubric items for grading criteria.
+            </p>
+
+            <div className="border rounded p-4 bg-white shadow">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Questions</h3>
+              <div>
+                {questions.map((q, qIdx) => (
+                  <div key={qIdx} className="border p-4 bg-gray-100 rounded">
+                    <input
+                      className="font-bold text-lg text-gray-800 mb-2 w-full"
+                      placeholder="Question title"
+                      value={q.title}
+                      onChange={e => {
+                        const newQs = [...questions];
+                        newQs[qIdx].title = e.target.value;
+                        setQuestions(newQs);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Points"
+                      className="w-1/3 border px-2 py-1 mb-2"
+                      value={q.points}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        const newQs = [...questions];
+                        newQs[qIdx].points = isNaN(val) ? 0 : val;
+                        setQuestions(newQs);
+                      }}
+                    />
+
+                    <h4 className="text-md font-medium mt-2">Rubrics</h4>
+                    {q.rubrics.map((r, rIdx) => (
+                      <div key={rIdx} className="border border-gray-400 rounded p-2 ml-4 mb-2">
+                        <input
+                          className="border px-2 py-1 w-full mb-1"
+                          placeholder="Rubric description"
+                          value={r.description}
+                          onChange={e => {
+                            const newQs = [...questions];
+                            newQs[qIdx].rubrics[rIdx].description = e.target.value;
+                            setQuestions(newQs);
+                          }}
+                        />
+                        <input
+                          type="number"
+                          className="border w-1/4 mb-1 px-2 py-1"
+                          placeholder="Points"
+                          value={r.points}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            const newQs = [...questions];
+
+                            const totalOtherRubrics = newQs[qIdx].rubrics.reduce((sum, rub, idx) => {
+                              return idx === rIdx ? sum : sum + rub.points;
+                            }, 0);
+
+                            const maxAllowed = newQs[qIdx].points - totalOtherRubrics;
+
+                            // Clamp to max allowed
+                            newQs[qIdx].rubrics[rIdx].points = isNaN(val) ? 0 : Math.min(val, maxAllowed);
+
+                            setQuestions(newQs);
+                          }}
+                        />
+                        <div className="flex gap-4 mb-2">
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              checked={r.add}
+                              onChange={e => {
+                                const newQs = [...questions];
+                                newQs[qIdx].rubrics[rIdx].add = e.target.checked;
+                                if (e.target.checked) newQs[qIdx].rubrics[rIdx].subtract = false;
+                                setQuestions(newQs);
+                              }}
+                            />
+                            Add
+                          </label>
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              checked={r.subtract}
+                              onChange={e => {
+                                const newQs = [...questions];
+                                newQs[qIdx].rubrics[rIdx].subtract = e.target.checked;
+                                if (e.target.checked) newQs[qIdx].rubrics[rIdx].add = false;
+                                setQuestions(newQs);
+                              }}
+                            />
+                            Subtract
+                          </label>
+                          <button
+                            className="text-red-600 text-sm"
+                            onClick={() => {
+                              const newQs = [...questions];
+                              newQs[qIdx].rubrics.splice(rIdx, 1);
+                              setQuestions(newQs);
+                            }}
+                          >
+                            Delete Rubric
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      className="text-blue-600 mt-2"
+                      onClick={() => {
+                        const newQs = [...questions];
+                        newQs[qIdx].rubrics.push({ description: '', points: 0, add: false, subtract: false });
+                        setQuestions(newQs);
+                      }}
+                    >
+                      + Add Rubric
+                    </button>
+
+                    <button
+                      className="text-red-600 mt-2 ml-4"
+                      onClick={() => {
+                        const newQs = [...questions];
+                        newQs.splice(qIdx, 1);
+                        setQuestions(newQs);
+                      }}
+                    >
+                      Delete Question
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                  onClick={() => {
+                    setQuestions(prev => [...prev, { title: '', points: 0, rubrics: [] }]);
+                  }}
+                >
+                  + Add Question
+                </button>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await apiFunctions.updateAssignmentOutline(assignment.id, { outline: questions });
+                      alert('Outline saved!');
+                    } catch (err) {
+                      console.error('Failed to save outline:', err);
+                      alert('Failed to save outline.');
+                    }
+                  }}
+                  className="mt-2 mx-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                >
+                  Save Outline
+                </button>
+              </div>
+            </div>
           </div>
         );
-    }
+      }
   };
 
   return (
@@ -388,27 +524,35 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         setActiveTab={setActiveTab}
       />
       <main className="flex-1 p-8">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
-          </div>
-          {activeTab === 'assignments' && (
-            <div className="w-96 relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search submissions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
+        {activeTab === 'outline' && !is_manually_graded ? (
+           <div className="mb-8 flex flex-col">
+              <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
+              <div className="py-12 text-gray-500">This assignment is not manually graded.</div>
+           </div>
+        ) : (
+          <>
+            {/* Only show search bar in submissions tab */}
+            <div className="mb-8 flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
+              {activeTab === 'submissions' && (
+                <div className="w-96 relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search submissions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {renderContent()}
+            {renderContent()}
+          </>
+        )}
       </main>
 
       {/* Delete Confirmation Modal */}

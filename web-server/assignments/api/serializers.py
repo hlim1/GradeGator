@@ -9,6 +9,9 @@ class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = '__all__'
+        extra_kwargs = {
+            'questions': {'required': False}
+        }
 
 class SubmissionFileSerializer(serializers.ModelSerializer):
     class Meta:

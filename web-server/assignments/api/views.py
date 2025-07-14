@@ -3,10 +3,13 @@ from rest_framework import viewsets
 from assignments.models import Assignment, Submission, GradingRubric
 from .serializers import AssignmentSerializer, SubmissionSerializer, GradingRubricSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
+from django.conf import settings
+from grade_gator.storage_backends import ProfessorTestCasesStorage
 import boto3
 import json
 import uuid
@@ -26,6 +29,19 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     """
     queryset = Assignment.objects.all()
     serializer_class = AssignmentSerializer
+
+    @action(detail=True, methods=['post'], url_path='outline')
+    def outline(self, request, pk=None):
+        assignment = self.get_object()
+        outline = request.data.get('outline')
+
+        if not isinstance(outline, list):
+            return Response({'error': 'Outline must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        assignment.questions = outline
+        assignment.save()
+
+        return Response(self.get_serializer(assignment).data, status=status.HTTP_200_OK)
 
 @extend_schema(
     description="Upload a submission with one or more files",
@@ -93,18 +109,29 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-id')
 
     def list(self, request, *args, **kwargs):
-        assignment_id = request.query_params.get("assignment")
-        student_id = request.query_params.get("student")
+      assignment_id = request.query_params.get("assignment")
+      student_id = request.query_params.get("student")
 
-        if assignment_id and student_id:
-            submission = self.get_queryset().first()  # newest submission for that student and assignment
-            if submission:
-                serializer = self.get_serializer(submission)
-                return Response(serializer.data)
-            else:
-                return Response({"detail": "No submission found."}, status=404)
+      # If requesting specific student's latest submission
+      if assignment_id and student_id:
+          submission = self.get_queryset().first()
+          if submission:
+              serializer = self.get_serializer(submission)
+              return Response(serializer.data)
+          else:
+              return Response({"detail": "No submission found."}, status=404)
 
-        return super().list(request, *args, **kwargs)
+      # Else, return only the latest submission per student for the assignment
+      if assignment_id:
+          all_submissions = self.get_queryset()
+          latest_per_student = {}
+          for submission in all_submissions:
+              if submission.student_id not in latest_per_student:
+                  latest_per_student[submission.student_id] = submission
+          serializer = self.get_serializer(latest_per_student.values(), many=True)
+          return Response(serializer.data)
+
+      return super().list(request, *args, **kwargs)
 
 class SubmissionUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -223,18 +250,37 @@ class SubmissionUploadView(GenericAPIView):
     request=GradingRubricSerializer,
     responses={201: GradingRubricSerializer},
     description="Upload a grading rubric (PDF/ZIP/etc) associated with an assignment"
-)  
+)
 
-        
 class RubricUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)
     serializer_class = GradingRubricSerializer
-    serializer = GradingRubricSerializer
 
     def post(self, request, *args, **kwargs):
+        assignment_id = request.data.get("assignment")
+        if not assignment_id:
+            return Response({'error': 'Missing assignment ID'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Instantiate your custom storage
+        storage = ProfessorTestCasesStorage()
+        bucket = storage.bucket  # This is a boto3 Bucket resource
+
+        # List and delete matching object
+        try:
+            for obj in bucket.objects.all():
+                key = obj.key
+                print(f"Checking S3 key: {key}")
+                if key.startswith(f"{assignment_id}_"):
+                    print(f"Deleting matching autograder: {key}")
+                    obj.delete()
+                    break  # stop after first match
+        except Exception as e:
+            return Response({'error': 'Failed to delete existing autograder',
+                             'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Continue to save the uploaded file
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-            #return Response({"file_url": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

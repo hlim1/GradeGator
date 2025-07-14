@@ -11,6 +11,7 @@ class Grade(models.Model):
                                 null=True, blank=True)
     grading_time = models.DateTimeField(auto_now=True)
     is_finalized = models.BooleanField(default=False)
+    question_scores = models.JSONField(default=dict)
     submitted_file = models.FileField(upload_to='submitted_code/', null=True, blank=True)    
     submitted_code_text = models.TextField(null=True, blank=True)
     submitted_files_json = models.JSONField(null=True, blank=True)
@@ -26,6 +27,7 @@ class Feedback(models.Model):
     position = models.CharField(max_length=100, help_text="Position reference in the submission")
     created_at = models.DateTimeField(auto_now_add=True)
     acknowledged_by_student = models.BooleanField(default=False)
+    metadata = models.JSONField(default=dict)
     
     def __str__(self):
         return f"Feedback on {self.grade.submission.assignment}"

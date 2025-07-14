@@ -34,6 +34,9 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (sessionStorage.getItem("studentIdForFeedback")) {
+      sessionStorage.removeItem("studentIdForFeedback");
+    }
     const fetchAssignments = async () => {
       try {
         const data = await apiFunctions.getCourseAssignments(course.id);

@@ -221,6 +221,11 @@ export const apiFunctions = {
     return response.data;
   },
 
+  updateAssignmentOutline: async (id: number, data: { outline: Question[] }): Promise<Assignment> => {
+    const response = await api.post<Assignment>(`/assignments/${id}/outline/`, data);
+    return response.data;
+  },
+
   getAssignmentSubmissions: async (assignmentId: number): Promise<Submission[]> => {
     const response = await api.get<Submission[]>('/submissions/', {
       params: {

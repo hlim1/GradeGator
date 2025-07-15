@@ -47,6 +47,7 @@ class Assignment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_manually_graded = models.BooleanField(default=False)
     questions = models.JSONField(default=list)
+    autograder_name = models.CharField(null=True)
     
     def __str__(self):
         return f"{self.name} ({self.assignment_id})"

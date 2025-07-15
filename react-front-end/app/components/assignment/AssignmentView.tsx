@@ -43,6 +43,8 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   const [release_date, setReleaseDate] = useState(assignment.release_date.slice(0, 16));
   const [is_visible_to_students, setVisible] = useState(assignment.is_visible_to_students);
   const [is_manually_graded, setManual] = useState(assignment.is_manually_graded);
+  const [late_due_date, setLateDueDate] = useState(assignment.late_due_date?.slice(0, 16) || '');
+  const [allow_late_submissions, setAllowLateSubmissions] = useState(assignment.allow_late_submissions || false);
 
   // Autograder states
   const [rubricFile, setRubricFile] = useState<File | null>(null);
@@ -229,6 +231,8 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                       release_date,
                       is_visible_to_students,
                       is_manually_graded,
+                      late_due_date: late_due_date ? new Date(late_due_date).toISOString() : null,
+                      allow_late_submissions,
                     });
                     alert('Assignment updated!');
                   } catch (error) {
@@ -273,23 +277,76 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   />
                 </div>
                 <div>
-                  <label className="block font-medium text-gray-700">Due Date</label>
-                  <input
-                    type="datetime-local"
-                    className="w-full border px-3 py-2 rounded"
-                    value={due_date}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </div>
-                <div>
                   <label className="block font-medium text-gray-700">Release Date</label>
                   <input
                     type="datetime-local"
                     className="w-full border px-3 py-2 rounded"
                     value={release_date}
-                    onChange={(e) => setReleaseDate(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const nowPlus2Min = new Date(getMinReleaseDate());
+                      if (new Date(val) < nowPlus2Min) {
+                        const adjusted = nowPlus2Min.toISOString().slice(0, 16);
+                        setReleaseDate(adjusted);
+                      } else {
+                        setReleaseDate(val);
+                      }
+                      if (dueDate && new Date(dueDate) <= new Date(val)) {
+                        const adjustedDue = new Date(new Date(val).getTime() + 60 * 1000);
+                        setDueDate(adjustedDue.toISOString().slice(0, 16));
+                      }
+                    }}
+                  />
+               </div>
+                <div>
+                  <label className="block font-medium text-gray-700">Due Date</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full border px-3 py-2 rounded"
+                    value={due_date}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (releaseDate && new Date(val) <= new Date(releaseDate)) {
+                        const adjusted = new Date(new Date(releaseDate).getTime() + 60 * 1000);
+                        setDueDate(adjusted.toISOString().slice(0, 16));
+                      } else {
+                        setDueDate(val);
+                      }
+
+                      if (lateDueDate && new Date(lateDueDate) <= new Date(val)) {
+                        const adjustedLate = new Date(new Date(val).getTime() + 60 * 1000);
+                        setLateDueDate(adjustedLate.toISOString().slice(0, 16));
+                      }
+                    }}
                   />
                 </div>
+                {allow_late_submissions && (
+                  <div>
+                    <label className="block font-medium text-gray-700">Late Due Date</label>
+                    <input
+                      type="datetime-local"
+                      className="w-full border px-3 py-2 rounded"
+                      value={late_due_date}
+                      onChange={(e) => {
+                        const newLateDue = e.target.value;
+                        if (dueDate && new Date(newLateDue) <= new Date(dueDate)) {
+                          const adjusted = new Date(new Date(dueDate).getTime() + 60 * 1000);
+                          setLateDueDate(adjusted.toISOString().slice(0, 16));
+                        } else {
+                          setLateDueDate(newLateDue);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={allow_late_submissions}
+                    onChange={(e) => setAllowLateSubmissions(e.target.checked)}
+                  />
+                  <label className="text-gray-700">Allow Late Submissions</label>
+                </div
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"

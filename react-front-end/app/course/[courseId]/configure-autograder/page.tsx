@@ -160,7 +160,7 @@ const NextPage: React.FC = () => {
           className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
           disabled={!selectedFile || isUploading}
         >
-          {isUploading ? 'Uploading...' : 'Upload Rubric'}
+          {isUploading ? 'Uploading...' : 'Upload Autograder'}
         </button>
       </div>
     </div>

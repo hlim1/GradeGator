@@ -45,6 +45,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   const [is_manually_graded, setManual] = useState(assignment.is_manually_graded);
   const [late_due_date, setLateDueDate] = useState(assignment.late_due_date?.slice(0, 16) || '');
   const [allow_late_submissions, setAllowLateSubmissions] = useState(assignment.allow_late_submissions || false);
+  const [autograderName, setAutograderName] = useState(assignment.autograder_name || null);
 
   // Autograder states
   const [rubricFile, setRubricFile] = useState<File | null>(null);
@@ -376,6 +377,10 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
           return (
             <div className="py-4 max-w-xl">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Upload Grading Rubric</h2>
+              {autograderName
+                ? <div className="text-xl text-gray-600">Autograder for assignment: {assignment.autograder_name}</div>
+                : <div className="text-xl text-gray-600">No autograder for this assignment</div>
+              }
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();

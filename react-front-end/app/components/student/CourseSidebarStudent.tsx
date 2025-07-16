@@ -1,24 +1,29 @@
-'use client'
+'use client';
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import {
+  DocumentTextIcon,
+  ClipboardDocumentListIcon,
+  AcademicCapIcon,
+} from '@heroicons/react/24/outline';
 
 interface CourseSidebarStudentProps {
-  activeTab?: 'assignments' | 'gradebook';
-  onTabChange?: (tab: 'assignments' | 'gradebook') => void;
+  activeTab?: 'assignments' | 'gradebook' | 'files';
+  onTabChange?: (tab: 'assignments' | 'gradebook' | 'files') => void;
 }
 
-export default function CourseSidebarStudent({ 
+export default function CourseSidebarStudent({
   activeTab = 'assignments',
-  onTabChange 
+  onTabChange
 }: CourseSidebarStudentProps) {
   const router = useRouter();
 
   return (
     <aside className="w-64 min-h-screen bg-white border-r">
       <div className="p-4">
-        <div 
+        <div
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => router.push('/dashboard')}
         >
@@ -34,30 +39,45 @@ export default function CourseSidebarStudent({
       </div>
       <nav className="p-4">
         <div className="mb-4">
-          <button 
+          <button
             onClick={() => onTabChange?.('assignments')}
-            className={`w-full px-4 py-2 text-left rounded-lg transition-colors ${
+            className={`flex flex-row items-center gap-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
               activeTab === 'assignments'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            📋 Assignments
+            <ClipboardDocumentListIcon className="h-5 w-5" />
+            Assignments
           </button>
         </div>
         <div className="mb-4">
-          <button 
+          <button
             onClick={() => onTabChange?.('gradebook')}
-            className={`w-full px-4 py-2 text-left rounded-lg transition-colors ${
+            className={`flex flex-row items-center gap-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
               activeTab === 'gradebook'
                 ? 'bg-green-100 text-green-600'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            📚 Grade Book
+            <AcademicCapIcon className="h-5 w-5" />
+            Grade Book
+          </button>
+        </div>
+        <div className="mb-4">
+          <button
+            onClick={() => onTabChange?.('files')}
+            className={`flex flex-row items-center gap-2 w-full px-4 py-2 text-left rounded-lg transition-colors ${
+              activeTab === 'files'
+                ? 'bg-green-100 text-green-600'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <DocumentTextIcon className="h-5 w-5" />
+            Files
           </button>
         </div>
       </nav>
     </aside>
   );
-} 
+}

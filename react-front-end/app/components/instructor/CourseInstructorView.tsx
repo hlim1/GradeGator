@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import RosterPage from './RosterPage';
 import { useParams } from 'next/navigation';
-
+import Files from '../Files';
 
 interface AssignmentData {
   assignmentName: string;
@@ -30,7 +30,7 @@ interface CourseInstructorViewProps {
 }
 
 export default function CourseInstructorView({ course, assignmentData }: CourseInstructorViewProps) {
-  const [activeTab, setActiveTab] = useState<'assignments' | 'gradebook' | 'roster' | 'documents'>('assignments');
+  const [activeTab, setActiveTab] = useState<'assignments' | 'gradebook' | 'roster' | 'files'>('assignments');
   const [assignmentType, setAssignmentType] = useState<'all' | 'homework' | 'quiz' | 'others'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAssignments, setSelectedAssignments] = useState<number[]>([]);
@@ -264,13 +264,8 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
         );
       case 'roster':
          return <RosterPage courseId={courseId} />;
-      case 'documents':
-        return (
-          <div className="p-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Course Documents</h2>
-            <p className="text-gray-600 mt-2">Documents content coming soon...</p>
-          </div>
-        );
+      case 'files':
+        return <Files />;
     }
   };
 

@@ -6,6 +6,7 @@ import { FaSearch } from 'react-icons/fa';
 import UploadModal from '@/app/components/UploadModal';
 import CourseSidebarStudent from '@/app/components/student/CourseSidebarStudent';
 import { format } from 'date-fns';
+import Files from '../Files';
 
 interface AssignmentData {
   assignmentName: string;
@@ -27,7 +28,7 @@ interface CourseStudentViewProps {
 }
 
 export default function CourseStudentView({ course, assignmentData }: CourseStudentViewProps) {
-  const [activeTab, setActiveTab] = useState<'assignments' | 'gradebook'>('assignments');
+  const [activeTab, setActiveTab] = useState<'assignments' | 'gradebook' | 'files'>('assignments');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -37,6 +38,7 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
     if (sessionStorage.getItem("studentIdForFeedback")) {
       sessionStorage.removeItem("studentIdForFeedback");
     }
+
     const fetchAssignments = async () => {
       try {
         const data = await apiFunctions.getCourseAssignments(course.id);
@@ -51,11 +53,10 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
     fetchAssignments();
   }, [course.id]);
 
-  // If there's assignment data in sessionStorage, add it to the assignments list
   useEffect(() => {
     if (assignmentData) {
       const newAssignment: Assignment = {
-        id: Date.now(), // Temporary ID
+        id: Date.now(),
         assignment_id: `temp-${Date.now()}`,
         name: assignmentData.assignmentName,
         grade_method: 'POINTS',
@@ -66,18 +67,15 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         is_manually_graded: false,
-        course: course.id
+        course: course.id,
       };
-      setAssignments(prev => [...prev, newAssignment]);
+      setAssignments((prev) => [...prev, newAssignment]);
     }
   }, [assignmentData, course.id]);
 
   const getStatusBadge = (assignment: Assignment) => {
-    if (!assignment.is_visible_to_students) {
-      return null;
-    }
+    if (!assignment.is_visible_to_students) return null;
 
-    // TODO: Add proper submission status check once API supports it
     return (
       <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
         Not Submitted
@@ -91,7 +89,7 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
     }
   };
 
-  const filteredAssignments = assignments.filter(assignment =>
+  const filteredAssignments = assignments.filter((assignment) =>
     assignment.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -149,8 +147,8 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(assignment)}
-                      <a 
-                        href={`/course/${course.id}/assignment/${assignment.id}/submitted-feedback`} 
+                      <a
+                        href={`/course/${course.id}/assignment/${assignment.id}/submitted-feedback`}
                         className="text-blue-500 hover:text-blue-700 text-sm"
                       >
                         View Feedback
@@ -178,18 +176,15 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
             <p className="text-gray-600 mt-2">Grade book content coming soon...</p>
           </div>
         );
+      case 'files':
+        return <Files />;
     }
   };
 
   return (
     <div className="flex flex-1">
-      <CourseSidebarStudent 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-      <main className="flex-1 p-8">
-        {renderContent()}
-      </main>
+      <CourseSidebarStudent activeTab={activeTab} onTabChange={setActiveTab} />
+      <main className="flex-1 p-8">{renderContent()}</main>
 
       <UploadModal
         isOpen={!!selectedAssignment}
@@ -200,4 +195,4 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
       />
     </div>
   );
-} 
+}

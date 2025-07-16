@@ -1,10 +1,10 @@
 # courses/api/views.py
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from courses.models import Course, Student, Instructor
+from courses.models import Course, Student, Instructor, CourseInstructorRole
 from .serializers import CourseSerializer, StudentSerializer, InstructorSerializer
-from .permissions import IsAdminOrInstructor
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.contrib.auth import get_user_model
 
@@ -38,8 +38,9 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         results = []
 
-        instructor_courses = Course.objects.filter(instructors__user_id=user_id)
-        for course in instructor_courses:
+        roles = CourseInstructorRole.objects.filter(instructor__user_id=user_id).select_related('course', 'instructor')
+        for role in roles:
+            course = role.course
             results.append({
                 "id": course.id,
                 "name": course.name,
@@ -48,7 +49,7 @@ class CourseViewSet(viewsets.ModelViewSet):
                 "section": course.section,
                 "department": course.department,
                 "code": course.code,
-                "role": "instructor"
+                "role": role.role_type
             })
 
         student_courses = Course.objects.filter(students__user_id=user_id).exclude(id__in=[c['id'] for c in results])
@@ -63,68 +64,16 @@ class CourseViewSet(viewsets.ModelViewSet):
                 "code": course.code,
                 "role": "student"
             })
-
         return Response(results)
 
-    @action(detail=True, methods=['post'], url_path='change-role')
-    def change_role(self, request, pk=None):
-        print("DEBUG:", request.data)
-        course = self.get_object()
-        user_id = request.data.get('user_id')
-        requested_role = request.data.get('requested_role')
-
-        if not user_id:
-            return Response({'error': 'user_id not found'}, status=status.HTTP_400_BAD_REQUEST)
-        if not requested_role:
-            return Response({'error': 'requested_role not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        role_map = {
-            "student": (Student, "student_id", "S"),
-            "instructor": (Instructor, "instructor_id", "I"),
-        }
-
-        if requested_role not in role_map:
-            return Response({'error': 'Invalid requested_role'}, status=status.HTTP_400_BAD_REQUEST)
-
-        TargetModel, id_field, prefix = role_map[requested_role]
-
-        # Remove from all known roles in this course
-        for Model in [Student, Instructor]:
-            try:
-                role_instance = Model.objects.get(user=user)
-                role_instance.courses.remove(course)
-            except Model.DoesNotExist:
-                continue
-
-        # Add to the new role
-        user_id_str = str(user.id)
-        role_instance, _ = TargetModel.objects.get_or_create(
-            user=user,
-            defaults={
-                 id_field: f"{prefix}{user_id_str.zfill(6)}",
-                 'name': user.get_full_name() or user.username,
-                 'preferred_name': user.preferred_name if hasattr(user, 'preferred_name') else user.get_full_name() or user.username,
-            }
-        )
-        role_instance.courses.add(course)
-
-        return Response({'message': f'User switched to {requested_role}'}, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='add_user')
     def add_user(self, request, pk=None):
-        print("DEBUG ADD: ", request.data)
         course = self.get_object()
         user_id = request.data.get('user_id')
-        role = request.data.get('role')
-        if not user_id:
-            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        role = request.data.get('role', 'instructor')
 
-        user_id_str = str(user_id)
+        if not user_id:
+            return Response({'error': 'user_id is required'}, status=400)
 
         try:
             user = User.objects.get(id=user_id)
@@ -132,53 +81,120 @@ class CourseViewSet(viewsets.ModelViewSet):
             preferred_name = user.preferred_name or full_name
             email = user.email or "N/A"
         except User.DoesNotExist:
-            full_name = f"User {user_id_str}"
-            preferred_name = f"User {user_id_str}"
-            email = "N/A"
+            return Response({'error': 'User not found'}, status=404)
 
-        if role == 'instructor':
+        if role in ['instructor', 'TA', 'owner']:
             instructor, _ = Instructor.objects.get_or_create(
-                user_id=user_id,
+                user=user,
                 defaults={
-                    'instructor_id': f"I{user_id_str.zfill(6)}",
+                    'instructor_id': f"I{str(user.id).zfill(6)}",
                     'name': full_name,
                     'preferred_name': preferred_name,
                     'department': 'Not specified'
                 }
             )
-            if course.instructors.filter(user_id=user_id).exists():
-                return Response({'status': 'already enrolled as instructor', 'email': email})
-            course.instructors.add(instructor)
-            return Response({'status': 'instructor added', 'email': email})
+
+            cir, created = CourseInstructorRole.objects.get_or_create(
+                course=course,
+                instructor=instructor,
+                defaults={'role_type': role}
+            )
+
+            if not created and cir.role_type != role:
+                cir.role_type = role
+                cir.save()
+            print("Created: ", cir)
+            return Response({'status': f'{role} added', 'email': email})
 
         elif role == 'student':
             student, _ = Student.objects.get_or_create(
-                user_id=user_id,
+                user=user,
                 defaults={
-                    'student_id': f"S{user_id_str.zfill(6)}",
+                    'student_id': f"S{str(user.id).zfill(6)}",
                     'name': full_name,
                     'preferred_name': preferred_name
                 }
             )
-            if course.students.filter(user_id=user_id).exists():
+            if course.students.filter(user=user).exists():
                 return Response({'status': 'already enrolled as student', 'email': email})
             course.students.add(student)
             return Response({'status': 'student added', 'email': email})
 
-        return Response({'error': 'Invalid role value. Must be "instructor" or "student".'}, status=400)
+        return Response({'error': 'Invalid role'}, status=400)
+
+    @action(detail=True, methods=['post'], url_path='change-role')
+    def change_role(self, request, pk=None):
+        course = self.get_object()
+        user_id = request.data.get('user_id')
+        requested_role = request.data.get('requested_role', 'instructor')
+
+        if not user_id:
+            return Response({'error': 'user_id is required'}, status=400)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+
+        if requested_role not in ['student', 'instructor', 'TA', 'owner']:
+            return Response({'error': 'Invalid role'}, status=400)
+
+        # Remove user from all roles for this course
+        CourseInstructorRole.objects.filter(course=course, instructor__user=user).delete()
+        course.students.remove(Student.objects.filter(user=user).first())
+
+        if requested_role == 'student':
+            student, _ = Student.objects.get_or_create(
+                user=user,
+                defaults={
+                    'student_id': f"S{str(user.id).zfill(6)}",
+                    'name': user.get_full_name(),
+                    'preferred_name': getattr(user, 'preferred_name', user.get_full_name())
+                }
+            )
+            course.students.add(student)
+        else:
+            instructor, _ = Instructor.objects.get_or_create(
+                user=user,
+                defaults={
+                    'instructor_id': f"I{str(user.id).zfill(6)}",
+                    'name': user.get_full_name(),
+                    'preferred_name': getattr(user, 'preferred_name', user.get_full_name()),
+                    'department': 'Not specified'
+                }
+            )
+            CourseInstructorRole.objects.create(
+                course=course,
+                instructor=instructor,
+                role_type=requested_role
+            )
+
+        return Response({'message': f'User switched to {requested_role}'})
 
     @action(detail=True, methods=['get'], url_path='roster')
     def get_roster(self, request, pk=None):
         course = self.get_object()
-        students = course.students.all()
-        instructors = course.instructors.all()
+        students_data = StudentSerializer(course.students.all(), many=True).data
 
-        students_data = StudentSerializer(students, many=True).data
-        instructors_data = InstructorSerializer(instructors, many=True).data
+        cirs = CourseInstructorRole.objects.filter(course=course).select_related('instructor')
+        instructors_data = InstructorSerializer(
+            [c.instructor for c in cirs if c.role_type == 'instructor'],
+            many=True
+        ).data
+        tas_data = InstructorSerializer(
+            [c.instructor for c in cirs if c.role_type == 'TA'],
+            many=True
+        ).data
+        owners_data = InstructorSerializer(
+            [c.instructor for c in cirs if c.role_type == 'owner'],
+            many=True
+        ).data
 
         return Response({
             'students': students_data,
-            'instructors': instructors_data
+            'instructors': instructors_data,
+            'tas': tas_data,
+            'owners': owners_data,
         })
 
     @action(detail=True, methods=['get'], url_path='user-role')
@@ -186,10 +202,13 @@ class CourseViewSet(viewsets.ModelViewSet):
         course = self.get_object()
         user = request.user
 
-        if course.instructors.filter(user_id=user.id).exists():
-            return Response({"role": "instructor"})
-        elif course.students.filter(user_id=user.id).exists():
+        cir = CourseInstructorRole.objects.filter(course=course, instructor__user=user).first()
+        if cir:
+            return Response({"role": cir.role_type})
+
+        if course.students.filter(user=user).exists():
             return Response({"role": "student"})
+
         return Response({"error": "Not enrolled in this course"}, status=403)
 
 @extend_schema_view(

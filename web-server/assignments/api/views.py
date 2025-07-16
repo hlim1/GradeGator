@@ -278,6 +278,11 @@ class RubricUploadView(GenericAPIView):
             return Response({'error': 'Failed to delete existing autograder',
                              'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        file = request.FILES.get("file")
+        if file:
+            filename = file.name
+            request.data["autograder_name"] = filename
+
         # Continue to save the uploaded file
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():

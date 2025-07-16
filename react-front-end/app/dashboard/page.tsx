@@ -57,7 +57,9 @@ export default function Dashboard() {
 
       if (Array.isArray(fetchedCourses)) {
         const uid = parseInt(userId || "-1");
-        const instructors = fetchedCourses.filter(c => c.role === "instructor");
+        const instructors = fetchedCourses.filter(c => 
+           ["instructor", "TA", "owner"].includes(c.role)
+        );
         const students = fetchedCourses.filter(c => c.role === "student");
 
         setInstructorCourses(instructors);
@@ -152,6 +154,7 @@ export default function Dashboard() {
                     courseNumber={course.number}
                     section={course.section}
                     semester={course.term}
+                    userRole={course.role}
                   />
                 </div>
               ))}
@@ -185,6 +188,7 @@ export default function Dashboard() {
                     courseNumber={course.number}
                     section={course.section}
                     semester={course.term}
+                    userRole={course.role}
                   />
                 </div>
               ))}

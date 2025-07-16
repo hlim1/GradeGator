@@ -35,6 +35,7 @@ export default function CourseDetailClient({ course, assignmentData }: CourseDet
     const fetchRole = async () => {
       try {
         const token = localStorage.getItem("accessToken");
+        console.log("Token being used: ", token);
         const res = await axios.get(`http://18.188.140.218:8000/api/courses/${course.id}/user-role/`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -55,7 +56,7 @@ export default function CourseDetailClient({ course, assignmentData }: CourseDet
   if (loading) return <div>Loading...</div>;
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {role === 'instructor' ? (
+      {role === 'instructor'|| role === 'owner'|| role === 'TA'? (
         <CourseInstructorView course={course} assignmentData={assignmentData} />
       ) : (
         <CourseStudentView course={course} assignmentData={assignmentData} />

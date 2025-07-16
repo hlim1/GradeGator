@@ -34,6 +34,36 @@ def auth_status(request):
         return Response({
             'is_authenticated': False
         })
+@extend_schema(
+    description="Get user details by email",
+    responses={200: UserSerializer},
+    tags=["accounts"]
+)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_user_by_email(request):
+    """
+    Retrieve a user by their email address.
+    """
+    print("DEBUG accounts: ", request)
+    email = request.query_params.get("email")
+    if not email:
+        return Response({'error': 'Email query parameter is required.'}, status=400)
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    try:
+        user = User.objects.get(email=email)
+        return Response({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'preferred_name': user.preferred_name
+        })
+    except User.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=404)
 
 @extend_schema(
     description="Get details of the currently authenticated user",

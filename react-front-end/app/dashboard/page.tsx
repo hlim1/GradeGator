@@ -32,6 +32,7 @@ export default function Dashboard() {
 
 
   useEffect(() => {
+    sessionStorage.removeItem('assignmentName');
     if (typeof window !== "undefined") {
       const hasRefreshed = sessionStorage.getItem("hasRefreshedDashboard");
       if (!hasRefreshed) {

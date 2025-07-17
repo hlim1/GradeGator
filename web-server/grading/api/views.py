@@ -103,12 +103,31 @@ class GradeViewSet(viewsets.ModelViewSet):
         # Determine if this submission should be finalized
         is_finalized = not is_manual  # Finalized only if no manual grading needed
 
+        test_results = nested.get('testResults', [])
+
+        total_auto = sum(test.get('points', 0) for test in test_results)  # max auto score (if points exist)
+        auto_score = sum(test.get('points', 0) for test in test_results if test.get('passed'))
+
+        # For now, no manual question scores:
+        manual_scores = {}
+        manual_total = 0
+        manual_max_total = 0
+
+        total_score = auto_score + manual_total
+
         defaults = {
-            'score': nested.get('total'),
+            'score': total_score,
             'feedback': json.dumps(nested),
             'is_finalized': is_finalized,
             'submitted_files_json': submitted_files,
+
+            'auto_points': auto_score,
+            'auto_max_points': total_auto,
+
+            'question_scores': manual_scores,  # empty dict for now
+            'rubric_max_points': manual_max_total,
         }
+
 
         if uploaded_file:
             defaults['submitted_file'] = uploaded_file

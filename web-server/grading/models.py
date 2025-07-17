@@ -16,7 +16,7 @@ class Grade(models.Model):
     auto_max_points = models.FloatField(null=True, blank=True)  # max possible from autograder
 
     # Manual rubric
-    question_scores = models.JSONField(default=dict)  # score from rubric
+    question_scores = models.JSONField(default=dict, blank=True, null=True) # score from rubric
     rubric_max_points = models.FloatField(null=True, blank=True)  # max rubric total, just add rubrics from Assignment table field, rubric
 
     # Other

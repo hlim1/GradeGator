@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Assignment, Submission, apiFunctions } from '@/lib/api';
 import { FaSearch, FaTrash } from 'react-icons/fa';
 import AssignmentSettingsSidebar from './AssignmentSettingsSidebar';
@@ -37,18 +37,32 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
 
   // Settings states
   const [name, setName] = useState(assignment.name);
-  const [grade_method, setGradeMethod] = useState(assignment.grade_method || 'points');
+  const [gradeMethod, setGradeMethod] = useState(assignment.grade_method || 'points');
   const [points, setPoints] = useState(assignment.points || 0);
-  const [due_date, setDueDate] = useState(assignment.due_date.slice(0, 16)); // "YYYY-MM-DDTHH:MM"
-  const [release_date, setReleaseDate] = useState(assignment.release_date.slice(0, 16));
-  const [is_visible_to_students, setVisible] = useState(assignment.is_visible_to_students);
-  const [is_manually_graded, setManual] = useState(assignment.is_manually_graded);
-  const [late_due_date, setLateDueDate] = useState(assignment.late_due_date?.slice(0, 16) || '');
-  const [allow_late_submissions, setAllowLateSubmissions] = useState(assignment.allow_late_submissions || false);
+  const [dueDate, setDueDate] = useState(assignment.due_date.slice(0, 16)); // "YYYY-MM-DDTHH:MM"
+  const [releaseDate, setReleaseDate] = useState(assignment.release_date.slice(0, 16));
+  const [isVisibleToStudents, setVisible] = useState(assignment.is_visible_to_students);
+  const [isManuallyGraded, setManual] = useState(assignment.is_manually_graded);
+  const [lateDueDate, setLateDueDate] = useState(assignment.late_due_date?.slice(0, 16) || '');
+  const [allowLateSubmissions, setAllowLateSubmissions] = useState(assignment.allow_late_submissions || false);
   const [autograderName, setAutograderName] = useState(assignment.autograder_name || null);
 
-  // Autograder states
+  useEffect(() => {
+    if (!autograderName) return;
+
+    const parts = autograderName.split("_");
+
+    // Check if the first part matches the assignment ID (string or number)
+    if (parts[0] === String(assignment.id)) {
+      const partsWithoutFirst = parts.slice(1);
+      setAutograderName(partsWithoutFirst.join("_"));
+    }
+  }, [autograderName, assignment.id]);
+
+
+  // Autograder states and variables
   const [rubricFile, setRubricFile] = useState<File | null>(null);
+  const fileInputRef = useRef(null);
 
   // Rubric states
   const [questions, setQuestions] = useState<Question[]>(assignment.questions || []);
@@ -98,6 +112,12 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
     );
   };
 
+  const getMinReleaseDate = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 2);
+    return now.toISOString().slice(0, 16);
+  };
+
   /*
   const handleDeleteSubmission = async (assignment: Assignment) => {
     try {
@@ -124,7 +144,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
   };
 
   const renderContent = () => {
-    if (activeTab === 'rubric' && !is_manually_graded) {
+    if (activeTab === 'rubric' && !isManuallyGraded) {
       return <div className="p-4 text-gray-600">Manual grading is disabled for this assignment.</div>;
     }
     switch (activeTab) {
@@ -226,14 +246,14 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   try {
                     const updated = await apiFunctions.updateAssignment(assignment.id, {
                       name,
-                      grade_method,
+                      gradeMethod,
                       points,
-                      due_date,
-                      release_date,
-                      is_visible_to_students,
-                      is_manually_graded,
-                      late_due_date: late_due_date ? new Date(late_due_date).toISOString() : null,
-                      allow_late_submissions,
+                      dueDate,
+                      releaseDate,
+                      isVisibleToStudents,
+                      isManuallyGraded,
+                      lateDueDate: lateDueDate ? new Date(lateDueDate).toISOString() : null,
+                      allowLateSubmissions,
                     });
                     alert('Assignment updated!');
                   } catch (error) {
@@ -241,7 +261,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     alert('Update failed.');
                   }
                   // If manually graded was turned OFF, delete the rubric or 'outline'
-                  if (!is_manually_graded) {
+                  if (!isManuallyGraded) {
                     await apiFunctions.updateAssignmentOutline(assignment.id, { outline: [] });
                     setQuestions([]); // Reset frontend state
                   }
@@ -259,7 +279,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   <label className="block font-medium text-gray-700">Grade Method</label>
                   <select
                     className="w-full border px-3 py-2 rounded"
-                    value={grade_method}
+                    value={gradeMethod}
                     onChange={(e) => setGradeMethod(e.target.value)}
                   >
                     <option value="POINTS">Points Based</option>
@@ -282,7 +302,8 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   <input
                     type="datetime-local"
                     className="w-full border px-3 py-2 rounded"
-                    value={release_date}
+                    min={getMinReleaseDate()}
+                    value={releaseDate}
                     onChange={(e) => {
                       const val = e.target.value;
                       const nowPlus2Min = new Date(getMinReleaseDate());
@@ -298,13 +319,14 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                       }
                     }}
                   />
-               </div>
+                </div>
                 <div>
                   <label className="block font-medium text-gray-700">Due Date</label>
                   <input
                     type="datetime-local"
                     className="w-full border px-3 py-2 rounded"
-                    value={due_date}
+                    min={releaseDate || getMinReleaseDate()}
+                    value={dueDate}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (releaseDate && new Date(val) <= new Date(releaseDate)) {
@@ -321,13 +343,14 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                     }}
                   />
                 </div>
-                {allow_late_submissions && (
+                {allowLateSubmissions && (
                   <div>
                     <label className="block font-medium text-gray-700">Late Due Date</label>
                     <input
                       type="datetime-local"
                       className="w-full border px-3 py-2 rounded"
-                      value={late_due_date}
+                      min={dueDate || getMinReleaseDate()}
+                      value={lateDueDate}
                       onChange={(e) => {
                         const newLateDue = e.target.value;
                         if (dueDate && new Date(newLateDue) <= new Date(dueDate)) {
@@ -343,15 +366,15 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={allow_late_submissions}
+                    checked={allowLateSubmissions}
                     onChange={(e) => setAllowLateSubmissions(e.target.checked)}
                   />
                   <label className="text-gray-700">Allow Late Submissions</label>
-                </div
+                </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={is_visible_to_students}
+                    checked={isVisibleToStudents}
                     onChange={(e) => setVisible(e.target.checked)}
                   />
                   <label className="text-gray-700">Visible to Students</label>
@@ -359,7 +382,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={is_manually_graded}
+                    checked={isManuallyGraded}
                     onChange={(e) => setManual(e.target.checked)}
                   />
                   <label className="text-gray-700">Manually Graded</label>
@@ -377,10 +400,12 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
           return (
             <div className="py-4 max-w-xl">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Upload Grading Rubric</h2>
-              {autograderName
-                ? <div className="text-xl text-gray-600">Autograder for assignment: {assignment.autograder_name}</div>
-                : <div className="text-xl text-gray-600">No autograder for this assignment</div>
-              }
+              <div className="my-4">
+                {autograderName
+                  ? <div className="text-xl text-gray-600">Autograder for assignment: {autograderName}</div>
+                  : <div className="text-xl text-gray-600">Autograder for assignment: No autograder for this assignment</div>
+                }
+              </div>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -397,6 +422,13 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
 
                   try {
                     await apiFunctions.uploadRubric(formData);
+                    setAutograderName(rubricFile.name);
+                    setRubricFile(null);
+
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+
                     alert('Rubric uploaded!');
                   } catch (err) {
                     console.error(err);
@@ -404,7 +436,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
                   }
                 }}
               >
-                <input type="file" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" onChange={(e) => setRubricFile(e.target.files?.[0] || null)} />
+                <input type="file" ref={fileInputRef} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" onChange={(e) => setRubricFile(e.target.files?.[0] || null)} />
                 <button
                   type="submit"
                   className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
@@ -586,7 +618,7 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
         setActiveTab={setActiveTab}
       />
       <main className="flex-1 p-8">
-        {activeTab === 'rubric' && !is_manually_graded ? (
+        {activeTab === 'rubric' && !isManuallyGraded ? (
            <div className="mb-8 flex flex-col">
               <h1 className="text-3xl font-bold text-gray-800">{assignment.name}</h1>
               <div className="py-12 text-gray-500">This assignment is not manually graded.</div>

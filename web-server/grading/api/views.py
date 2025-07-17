@@ -103,12 +103,33 @@ class GradeViewSet(viewsets.ModelViewSet):
         # Determine if this submission should be finalized
         is_finalized = not is_manual  # Finalized only if no manual grading needed
 
+        # Parse outer JSON (full result)
+        result = json.loads(raw) if raw else {}
+
+        # Extract rubric from outer JSON (not nested inside output)
+        rubric = result.get('rubric', [])
+
+        # Extract nested JSON inside 'output' string
+        raw_output = result.get('output', '')
+        start = raw_output.find('{')
+        if start != -1:
+            nested = json.loads(raw_output[start:])
+        else:
+            nested = {}
+
         test_results = nested.get('testResults', [])
 
-        total_auto = sum(test.get('points', 0) for test in test_results)  # max auto score (if points exist)
-        auto_score = sum(test.get('points', 0) for test in test_results if test.get('passed'))
+        auto_score = 0
+        total_auto = 0
 
-        # For now, no manual question scores:
+        for i in range(len(rubric)):
+            max_score = rubric[i].get('max_score', 0)
+            total_auto += max_score
+            # Add max_score if test passed
+            if i < len(test_results) and test_results[i].get('passed'):
+                auto_score += max_score
+
+        # Manual scoring placeholders
         manual_scores = {}
         manual_total = 0
         manual_max_total = 0
@@ -117,16 +138,17 @@ class GradeViewSet(viewsets.ModelViewSet):
 
         defaults = {
             'score': total_score,
-            'feedback': json.dumps(nested),
+            'feedback': json.dumps(result),  # send prettified nested testResults JSON as feedback
             'is_finalized': is_finalized,
             'submitted_files_json': submitted_files,
 
             'auto_points': auto_score,
             'auto_max_points': total_auto,
 
-            'question_scores': manual_scores,  # empty dict for now
+            'question_scores': manual_scores,  # empty for now
             'rubric_max_points': manual_max_total,
         }
+
 
 
         if uploaded_file:

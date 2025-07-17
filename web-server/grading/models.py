@@ -15,7 +15,9 @@ class Grade(models.Model):
     submitted_file = models.FileField(upload_to='submitted_code/', null=True, blank=True)    
     submitted_code_text = models.TextField(null=True, blank=True)
     submitted_files_json = models.JSONField(null=True, blank=True)
-    
+    total_points_possible = models.FloatField(null=True, blank=True)
+    auto_points = models.FloatField(null=True, blank=True)
+
     def __str__(self):
         return f"Grade for {self.submission.student} on {self.submission.assignment}"
 

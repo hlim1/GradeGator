@@ -13,12 +13,16 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 import java.io.*;
 import java.nio.file.*;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.util.*;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import com.google.gson.Gson;
 
 /**
  * Enhanced SubmissionHandler that combines both implementations to support:
@@ -31,6 +35,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
     private final AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
     private static final String TEST_BUCKET = "professor-test-cases";
     private static final String RESULTS_BUCKET = "graded-results";
+    private List<Map<String,Object>> testMetadata;
     private String tempDir; // Will be initialized in handleRequest
 
     /*
@@ -173,7 +178,7 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             }
 
             context.getLogger().log("Running tests");
-            String testResult = runTests(context);
+            String testResult = runTests(testMetadata, context);
 
             /* ------------------------------------------------- */
             /* 4️⃣ Upload result + submission source files */
@@ -566,6 +571,9 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
             Files.write(modifiedTestFile.toPath(), modifiedTestContent.toString().getBytes());
             context.getLogger().log("Created modified test file: " + modifiedTestFile.getAbsolutePath());
 
+            //Extract metadata
+            testMetadata = extractTestMetadata(modifiedTestContent.toString(), context);
+
             // Step 5: Also modify RunTests.java
             File runTestsFile = findFileInDirectory(new File(tempDir), "RunTests.java");
             if (runTestsFile == null) {
@@ -635,7 +643,26 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
         }
     }
 
-    private String runTests(Context context) {
+    private List<Map<String, Object>> extractTestMetadata(String testFileContent, Context context) {
+        List<Map<String, Object>> metadataList = new ArrayList<>();
+
+        Pattern pattern = Pattern.compile("@GradedTest\\s*\\(\\s*name\\s*=\\s*\"([^\"]+)\"\\s*,\\s*max_score\\s*=\\s*([0-9.]+)\\s*\\)");
+        Matcher matcher = pattern.matcher(testFileContent);
+
+        while (matcher.find()) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("name", matcher.group(1));
+            data.put("max_score", Double.parseDouble(matcher.group(2)));
+            metadataList.add(data);
+        }
+
+        context.getLogger().log("Extracted test metadata: " + metadataList.toString());
+
+        return metadataList;
+    }
+
+
+    private String runTests(List<Map<String, Object>> testMetadata, Context context) {
         try {
             File[] resourceFiles = new File(tempDir + "/submission").listFiles(
                     file -> !file.isDirectory() && !file.getName().endsWith(".java"));
@@ -696,8 +723,13 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
                 return "{\"status\": \"test_failure\", \"output\": \"" + sanitizedOutput + "\"}";
             }
 
-            // Format the result as JSON
-            return "{\"status\": \"success\", \"output\": \"" + sanitizedOutput + "\"}";
+            Gson gson = new Gson();
+            String rubricJson = gson.toJson(testMetadata);
+
+            // Existing code: after parsing test output, e.g., 'sanitizedOutput'
+            String finalJson = "{\"status\": \"success\", \"output\": \"" + sanitizedOutput + "\", \"rubric\": " + rubricJson + "}";
+
+            return finalJson;
         } catch (Exception e) {
             context.getLogger().log("Test execution exception: " + e.getMessage());
             StringWriter sw = new StringWriter();

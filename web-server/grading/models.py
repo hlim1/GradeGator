@@ -4,20 +4,26 @@ from assignments.models import Submission
 from django.db.models import JSONField
 
 class Grade(models.Model):
-    submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name='grade')
-    score = models.FloatField(null=True, blank=True)
+   submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name='grade')
+    score = models.FloatField(null=True, blank=True)  # total_score
     feedback = models.TextField(blank=True, null=True)
-    graded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, 
-                                null=True, blank=True)
+    graded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     grading_time = models.DateTimeField(auto_now=True)
     is_finalized = models.BooleanField(default=False)
-    question_scores = models.JSONField(default=dict)
+    
+    # Autograder
+    auto_points = models.FloatField(null=True, blank=True)  # score earned from autograder
+    auto_max_points = models.FloatField(null=True, blank=True)  # max possible from autograder
+
+    # Manual rubric
+    question_scores = models.FloatField(null=True, blank=True)  # score from rubric
+    rubric_max_points = models.FloatField(null=True, blank=True)  # max rubric total, just add rubrics from Assignment table field, rubric
+
+    # Other
     submitted_file = models.FileField(upload_to='submitted_code/', null=True, blank=True)    
     submitted_code_text = models.TextField(null=True, blank=True)
     submitted_files_json = models.JSONField(null=True, blank=True)
-    total_points_possible = models.FloatField(null=True, blank=True)
-    auto_points = models.FloatField(null=True, blank=True)
-
+    
     def __str__(self):
         return f"Grade for {self.submission.student} on {self.submission.assignment}"
 

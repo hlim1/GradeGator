@@ -278,14 +278,18 @@ class RubricUploadView(GenericAPIView):
             return Response({'error': 'Failed to delete existing autograder',
                              'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        file = request.FILES.get("file")
-        if file:
-            filename = file.name
-            request.data["autograder_name"] = filename
-
-        # Continue to save the uploaded file
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+
+            # After saving the rubric, update the Assignment's autograder name
+            assignment_id = request.data.get("assignment")
+            if assignment_id:
+                assignment = Assignment.objects.get(pk=assignment_id)
+                uploaded_file = request.FILES.get("rubric_file")
+                if uploaded_file:
+                    assignment.autograder_name = uploaded_file.name
+                    assignment.save()
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

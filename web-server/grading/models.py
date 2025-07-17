@@ -4,7 +4,7 @@ from assignments.models import Submission
 from django.db.models import JSONField
 
 class Grade(models.Model):
-   submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name='grade')
+    submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name='grade')
     score = models.FloatField(null=True, blank=True)  # total_score
     feedback = models.TextField(blank=True, null=True)
     graded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)

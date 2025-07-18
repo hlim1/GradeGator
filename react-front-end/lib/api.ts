@@ -216,6 +216,14 @@ export const apiFunctions = {
     return response.data.filter(assignment => assignment.course === courseId);
   },
 
+  updateManualFeedbackScores: async (gradeId: number, data: any) => {
+    const response = await api.patch(`/api/grades/${gradeId}/update_scores/`, {
+      params: {
+        question_scores: data
+      }
+    });
+  },
+
   getSubmissions: async (): Promise<Submission[]> => {
     const response = await api.get<Submission[]>('/submissions/');
     return response.data;

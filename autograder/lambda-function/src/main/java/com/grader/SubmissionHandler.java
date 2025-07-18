@@ -719,15 +719,13 @@ public class SubmissionHandler implements RequestHandler<S3Event, String> {
                 .replace("\n", "\\n")   // escape newlines
                 .replace("\r", "\\r");  // optional: escape carriage returns
 
-            if (exitCode != 0) {
-                return "{\"status\": \"test_failure\", \"output\": \"" + sanitizedOutput + "\"}";
-            }
-
             Gson gson = new Gson();
             String rubricJson = gson.toJson(testMetadata);
 
+            String status = (exitCode == 0) ? "success" : "test_failure";
+
             // Existing code: after parsing test output, e.g., 'sanitizedOutput'
-            String finalJson = "{\"status\": \"success\", \"output\": \"" + sanitizedOutput + "\", \"rubric\": " + rubricJson + "}";
+            String finalJson = "{\"status\": \"" + status + "\", \"output\": \"" + sanitizedOutput + "\", \"rubric\": " + rubricJson + "}";
 
             return finalJson;
         } catch (Exception e) {

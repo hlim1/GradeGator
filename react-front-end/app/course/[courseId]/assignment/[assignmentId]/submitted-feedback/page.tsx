@@ -45,6 +45,7 @@ export default function SubmittedFeedbackPage() {
   const [assignment, setAssignment] = useState<Assignment | null >(null);
   const [assignmentName, setAssignmentName] = useState<string | null>(null);
   const [isManuallyGraded, setIsManuallyGraded] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Initialize ids and session info once on mount
   useEffect(() => {
@@ -54,15 +55,25 @@ export default function SubmittedFeedbackPage() {
     const course = parts[2];
     const assignment = parts[4];
     const nameAssignment = sessionStorage.getItem('assignmentName');
-    const sessionStudentId = sessionStorage.getItem('studentIdForFeedback');
-    const fallbackUserId = sessionStorage.getItem('userId');
 
     setAssignmentName(nameAssignment);
     setCourseId(course);
     setAssignmentId(assignment);
 
-    setUserIdFromSession(sessionStudentId);
-    setUserId(sessionStudentId ?? fallbackUserId);
+    const userFromAssignment = sessionStorage.getItem("studentIdForFeedback")
+
+    if (userFromAssignment) {
+      // User is instructor for this course
+      setUserIdFromSession(userFromAssignment);
+      setUserId(userFromAssignment);
+    } else {
+      // fallback for students
+      // User is student for this course
+      const studentId = sessionStorage.getItem("userId");
+      setUserId(studentId);
+    }
+
+    setLoading(false);
   }, []);
 
   // Fetch grade & feedback data when assignmentId or userId changes and both exist
@@ -73,6 +84,7 @@ export default function SubmittedFeedbackPage() {
       try {
         const assignmentData = await apiFunctions.getAssignment(assignmentId);
         setAssignment(assignmentData);
+        console.log("User Id being used for submission fetch",userId);
         const submissionId = await apiFunctions.getSubmissionId(assignmentId, userId);
         const res = await apiFunctions.getGradingResults(submissionId);
         console.log('Grading results:', res);
@@ -161,7 +173,7 @@ export default function SubmittedFeedbackPage() {
               Code
             </button>
           </div>
-          {!userIdFromSession && (
+          {!loading && !userIdFromSession && (
             <div className="pb-2">
               <button
                 onClick={() => setIsModalOpen(true)}
@@ -240,7 +252,7 @@ export default function SubmittedFeedbackPage() {
                     return (
                       <div key={index} className="mb-2">
                         <p className="font-medium text-gray-800">
-                          {question.title} - {question.points} pts
+                          {question.title} - [{question.points} pts]
                         </p>
 
                         {questionGrade?.score !== undefined && (
@@ -281,14 +293,17 @@ export default function SubmittedFeedbackPage() {
           </>
         )}
       </div>
+      <div>
+        <UploadModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          assignmentName={assignmentName ?? ''}
+          assignmentId={parseInt(assignmentId ?? '0')}
+          courseId={courseId ?? ''}
+        />
 
-      <UploadModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        assignmentName={assignmentName ?? ''}
-        assignmentId={parseInt(assignmentId ?? '0')}
-        courseId={courseId ?? ''}
-      />
+        
+      </div>
     </div>
   );
 }

@@ -40,11 +40,14 @@ export default function UserEditModal({
 
   const handleRoleChange = async () => {
     try {
-      const apiRole = role === 'TA' ? 'instructor' : role;
+      const apiRole = role;
+      console.log("USER" , user);
       console.log("Changing role for", user.user, "to", apiRole);
-      await apiFunctions.changeUserRole(courseId, user.user, apiRole);
+      console.log("Calling changeUserRole with:", courseId, user.user, apiRole);
+      await apiFunctions.changeUserRole(courseId, user.user_id, apiRole);
       alert('Role updated');
     } catch (err) {
+      console.log("ERROR Calling changeUserRole with:", courseId, user.user, apiRole);
       console.error(err);
       alert('Failed to update role');
     }

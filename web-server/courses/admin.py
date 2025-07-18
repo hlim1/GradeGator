@@ -19,7 +19,6 @@ class CourseAdmin(admin.ModelAdmin):
 class StudentAdmin(admin.ModelAdmin):
     list_display = ('student_id', 'name', 'preferred_name')
     search_fields = ('student_id', 'name', 'preferred_name')
-    filter_horizontal = ('courses',)
 
 @admin.register(Instructor)
 class InstructorAdmin(admin.ModelAdmin):

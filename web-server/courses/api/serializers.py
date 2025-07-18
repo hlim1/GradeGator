@@ -1,16 +1,28 @@
 # courses/api/serializers.py
 from rest_framework import serializers
-from courses.models import Course, Student, Instructor, CourseInstructorRole
+from courses.models import Course, Student, Instructor, CourseInstructorRole, CourseStudent
 
 class CourseInstructorRoleSerializer(serializers.ModelSerializer):
     instructor_id = serializers.CharField(source='instructor.instructor_id', read_only=True)
-    name = serializers.CharField(source='instructor.name', read_only=True)
-    preferred_name = serializers.CharField(source='instructor.preferred_name', read_only=True)
+    name = serializers.CharField(read_only=True)
+    preferred_name = serializers.CharField(read_only=True)
     email = serializers.EmailField(source='instructor.user.email', read_only=True)
+    user_id = serializers.IntegerField(source='instructor.user.id', read_only=True)
 
     class Meta:
         model = CourseInstructorRole
-        fields = ['instructor_id', 'name', 'preferred_name', 'email', 'role_type']
+        fields = ['user_id', 'instructor_id', 'name', 'preferred_name', 'email', 'role_type']
+
+class CourseStudentSerializer(serializers.ModelSerializer):
+    student_id = serializers.CharField(source='student.student_id', read_only=True)
+    name = serializers.CharField(read_only=True)
+    preferred_name = serializers.CharField(read_only=True)
+    email = serializers.EmailField(source='student.user.email', read_only=True)
+    user_id = serializers.IntegerField(source='student.user.id', read_only=True)
+
+    class Meta:
+        model = CourseStudent
+        fields = ['user_id', 'student_id', 'name', 'preferred_name', 'email']
 
 class CourseSerializer(serializers.ModelSerializer):
     students = serializers.PrimaryKeyRelatedField(

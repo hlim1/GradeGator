@@ -76,7 +76,7 @@ export default function RosterPage({ courseId }: { courseId: string }) {
           <tbody>
             {roster.map((user) => (
               <tr
-                key={user.user || user.user_id}
+                key={`roster-${user.role}-${user.user_id || user.student_id || user.instructor_id}`}
                 className={`cursor-pointer hover:bg-gray-100 ${
                   loggedInUserRole === 'TA' || (user.role === 'owner' && user.user_id === loggedInUserId)
                     ? 'opacity-60 cursor-default'

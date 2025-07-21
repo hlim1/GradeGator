@@ -584,11 +584,11 @@ export default function AssignmentView({ assignment }: AssignmentViewProps) {
             <div>
               <button
                 onClick={() => {
-                  sessionStorage.setItem("grading_mode", "true");
-                  sessionStorage.setItem("studentIdForFeedback", submission.student);
-                  router.push(`/course/${courseId}/assignment/${assignment.id}/submitted-feedback`);
+                  const allStudentIds = submissions.map(s => s.student);
+                  sessionStorage.setItem("studentIdsForFeedback", JSON.stringify(allStudentIds));
+                  router.push(`/course/${courseId}/assignment/${assignment.id}/grading`);
                 }}
-                className="right-0 bottom-0 absolute mt-2 mx-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="right-0 bottom-2 absolute mt-2 mx-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
                 Grade Rubrics
               </button>

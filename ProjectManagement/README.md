@@ -144,3 +144,12 @@
 - Instructors need to be able to grade the submission's manual rubric.
 - Instructor adding users to the course.
 - Set the owner of the course, and only the instructors can change the roles.
+
+### Week 9
+- Push and merge all changes to the main for Version 1.
+- Version 2:
+  - Merging Student and Instructor tables?
+  - Merging update name and role functionalities.
+  - Send an automated email to the user added to the course.
+    - Need to modify the user creation and addition logic.
+  - Rubric handling, i.e., students can view, and instructors/TAs can manually grade.

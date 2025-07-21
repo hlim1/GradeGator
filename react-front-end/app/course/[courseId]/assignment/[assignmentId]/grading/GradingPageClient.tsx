@@ -20,44 +20,50 @@ export default function GradingPageClient({ assignmentId }: Props) {
   const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
   const [rubricSelections, setRubricSelections] = useState<Record<string, boolean>>({});
 
-
   useEffect(() => {
-    async function fetchGrading() {
+    const fetchData = async () => {
       if (!currentSubmission) return;
 
-      try {
-        const res = await apiFunctions.getGradingResults(currentSubmission.id);
-        setGradingResults(res);
+      // Step 2: Get the full assignment object
+      const res = await apiFunctions.getAssignment(assignmentId);
+      setAssignment(res);
 
-        if (res?.feedback) {
-          const outer = JSON.parse(res.feedback);
-          setRubric(outer.rubric ?? []);
+      const grade = await apiFunctions.getGradingResults(currentSubmission.id);
+      setGradingResults(grade);
 
-          const outputStr = outer.output;
-          const start = outputStr.indexOf('{');
-          if (start !== -1) {
-            const nested = JSON.parse(outputStr.slice(start));
-            setParsedFeedback(nested);
-          } else {
-            setParsedFeedback(null);
-          }
-        }
-
-        if (res?.submitted_files_json) {
-          setSubmittedFiles(res.submitted_files_json);
-        } else if (res?.submitted_code_text) {
-          setSubmittedFiles([{ filename: 'Code.java', code_text: res.submitted_code_text }]);
-        } else {
-          setSubmittedFiles([]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch grading results:', err);
+      if (res?.assignment) {
+        // Extract rubric from assignment.questions
+        const questionRubrics = res.assignment.questions.flatMap((q: any) =>
+          (q.rubric ?? []).map((r: any) => ({
+            title: q.title,
+            points: r.points,
+            rubrics: r.rubrics
+          }))
+        );
+        setRubric(questionRubrics);
       }
-    }
 
-    fetchGrading();
-  }, [currentSubmission]);
+      if (grade?.feedback) {
+        try {
+          const outer = JSON.parse(grade.feedback);
+          setParsedFeedback(outer?.output ?? outer); // fallback if there's no output
+        } catch (e) {
+          console.warn('Failed to parse feedback', e);
+          setParsedFeedback(null);
+  }
+      }
 
+      if (grade?.submitted_files_json) {
+        setSubmittedFiles(grade.submitted_files_json);
+      } else if (grade?.submitted_code_text) {
+        setSubmittedFiles([{ filename: 'Code.java', code_text: grade.submitted_code_text }]);
+      } else {
+        setSubmittedFiles([]);
+      }
+    };
+
+    fetchData();
+  }, [assignmentId, currentSubmission]);
 
   useEffect(() => {
     async function fetchData() {
@@ -98,7 +104,7 @@ export default function GradingPageClient({ assignmentId }: Props) {
     <div className="flex">
       {currentSubmission ? (
         <div>
-          <h2>Grading: {currentSubmission.student.name}</h2>
+          <h2>Grading: {currentSubmission.student_detail?.name}</h2>
           <SubmissionFeedback
             rubric={rubric}
             parsedFeedback={parsedFeedback}

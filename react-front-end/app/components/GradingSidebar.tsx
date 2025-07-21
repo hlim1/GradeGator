@@ -2,10 +2,23 @@
 
 import React from 'react';
 
+interface RubricItem {
+  add: boolean;
+  subtract: boolean;
+  points: number;
+  description: string;
+}
+
+interface QuestionRubric {
+  title: string;
+  points: number;
+  rubrics: RubricItem[];
+}
+
 interface GradingSidebarProps {
-  rubric: RubricEntry[];
+  rubric: QuestionRubric[];
   rubricSelections: Record<string, boolean>;
-  onToggle: (item: string) => void;
+  onToggle: (key: string) => void;
 }
 
 export default function GradingSidebar({
@@ -19,19 +32,24 @@ export default function GradingSidebar({
         <h2 className="text-xl font-bold text-gray-800">Grading Panel</h2>
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Rubric</h3>
-        {rubric.map((item) => (
-          <label key={item.description} className="flex items-center space-x-2 mb-2">
-            <input
-              type="checkbox"
-              checked={rubricSelections[item.description] || false}
-              onChange={() => onToggle(item.description)}
-            />
-            <span>{item.description}</span>
-          </label>
-        ))}
-      </div>
+      {rubric.map((question, qIndex) => (
+        <div key={qIndex} className="mb-4">
+          <h3 className="text-md font-semibold text-gray-700 mb-2">{question.title}</h3>
+          {question.rubrics.map((item, rIndex) => {
+            const uniqueKey = `${qIndex}-${rIndex}-${item.description}`;
+            return (
+              <label key={uniqueKey} className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={rubricSelections[uniqueKey] || false}
+                  onChange={() => onToggle(uniqueKey)}
+                />
+                <span>{item.description}</span>
+              </label>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

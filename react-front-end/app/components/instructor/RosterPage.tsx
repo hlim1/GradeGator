@@ -59,7 +59,9 @@ export default function RosterPage({ courseId }: { courseId: string }) {
   return (
     <div className="relative">
       {courseCode && (
-        <h2 className="text-2xl font-bold text-gray-800 mb-4"> Course Code: <span className="text-green-600">{courseCode}</span></h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          Course Code: <span className="text-green-600">{courseCode}</span>
+        </h2>
       )}
       <h1 className="text-xl font-bold mb-4">Roster</h1>
       {roster.length === 0 ? (
@@ -69,6 +71,7 @@ export default function RosterPage({ courseId }: { courseId: string }) {
           <thead>
             <tr>
               <th className="px-4 py-2 text-left">Name</th>
+              <th className="px-4 py-2 text-left">Preferred Name</th>
               <th className="px-4 py-2 text-left">Email</th>
               <th className="px-4 py-2 text-left">Role</th>
             </tr>
@@ -76,7 +79,7 @@ export default function RosterPage({ courseId }: { courseId: string }) {
           <tbody>
             {roster.map((user) => (
               <tr
-                key={user.user || user.user_id}
+                key={`roster-${user.role}-${user.user_id || user.student_id || user.instructor_id}`}
                 className={`cursor-pointer hover:bg-gray-100 ${
                   loggedInUserRole === 'TA' || (user.role === 'owner' && user.user_id === loggedInUserId)
                     ? 'opacity-60 cursor-default'
@@ -85,6 +88,7 @@ export default function RosterPage({ courseId }: { courseId: string }) {
                 onClick={() => openModal(user)}
               >
                 <td className="px-4 py-2">{user.name}</td>
+                <td className="px-4 py-2">{user.preferred_name || '-'}</td>
                 <td className="px-4 py-2">{user.email}</td>
                 <td className="px-4 py-2 capitalize">{user.role}</td>
               </tr>

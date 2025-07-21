@@ -3,8 +3,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from courses.models import Course, Student, Instructor, CourseInstructorRole
-from .serializers import CourseSerializer, StudentSerializer, InstructorSerializer
+from courses.models import Course, Student, Instructor, CourseInstructorRole, CourseStudent
+from .serializers import CourseSerializer, StudentSerializer, InstructorSerializer, CourseStudentSerializer, CourseInstructorRoleSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.contrib.auth import get_user_model
 
@@ -52,18 +52,21 @@ class CourseViewSet(viewsets.ModelViewSet):
                 "role": role.role_type
             })
 
-        student_courses = Course.objects.filter(students__user_id=user_id).exclude(id__in=[c['id'] for c in results])
-        for course in student_courses:
-            results.append({
-                "id": course.id,
-                "name": course.name,
-                "number": course.number,
-                "term": course.term,
-                "section": course.section,
-                "department": course.department,
-                "code": course.code,
-                "role": "student"
-            })
+        course_students = CourseStudent.objects.filter(student__user_id=user_id).select_related('course')
+        for cs in course_students:
+            if cs.course.id not in [c['id'] for c in results]:
+                course = cs.course
+                results.append({
+                    "id": course.id,
+                    "name": course.name,
+                    "number": course.number,
+                    "term": course.term,
+                    "section": course.section,
+                    "department": course.department,
+                    "code": course.code,
+                    "role": "student"
+                })
+
         return Response(results)
 
     @action(detail=True, methods=['post'], url_path='add_user')
@@ -97,13 +100,17 @@ class CourseViewSet(viewsets.ModelViewSet):
             cir, created = CourseInstructorRole.objects.get_or_create(
                 course=course,
                 instructor=instructor,
-                defaults={'role_type': role}
+                defaults={
+                    'role_type': role,
+                    'name': full_name,
+                    'preferred_name': preferred_name
+                }
             )
 
             if not created and cir.role_type != role:
                 cir.role_type = role
                 cir.save()
-            print("Created: ", cir)
+
             return Response({'status': f'{role} added', 'email': email})
 
         elif role == 'student':
@@ -115,15 +122,26 @@ class CourseViewSet(viewsets.ModelViewSet):
                     'preferred_name': preferred_name
                 }
             )
-            if course.students.filter(user=user).exists():
+
+            cs, created = CourseStudent.objects.get_or_create(
+                course=course,
+                student=student,
+                defaults={
+                    'name': full_name,
+                    'preferred_name': preferred_name
+                }
+            )
+
+            if not created:
                 return Response({'status': 'already enrolled as student', 'email': email})
-            course.students.add(student)
+
             return Response({'status': 'student added', 'email': email})
 
         return Response({'error': 'Invalid role'}, status=400)
 
     @action(detail=True, methods=['post'], url_path='change-role')
     def change_role(self, request, pk=None):
+        print("REQUEST FOR ROLE CHANGE:", request.data)
         course = self.get_object()
         user_id = request.data.get('user_id')
         requested_role = request.data.get('requested_role', 'instructor')
@@ -133,40 +151,51 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         try:
             user = User.objects.get(id=user_id)
+            full_name = user.get_full_name() or user.username
+            preferred_name = getattr(user, 'preferred_name', full_name)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
 
         if requested_role not in ['student', 'instructor', 'TA', 'owner']:
             return Response({'error': 'Invalid role'}, status=400)
 
-        # Remove user from all roles for this course
+        # Remove all existing roles
+        print("CIR ROLE: ",  CourseInstructorRole.objects.filter(course=course, instructor__user=user))
+        print("CS ROLE: :",   CourseStudent.objects.filter(course=course, student__user=user))
         CourseInstructorRole.objects.filter(course=course, instructor__user=user).delete()
-        course.students.remove(Student.objects.filter(user=user).first())
+        CourseStudent.objects.filter(course=course, student__user=user).delete()
 
         if requested_role == 'student':
             student, _ = Student.objects.get_or_create(
                 user=user,
                 defaults={
                     'student_id': f"S{str(user.id).zfill(6)}",
-                    'name': user.get_full_name(),
-                    'preferred_name': getattr(user, 'preferred_name', user.get_full_name())
+                    'name': full_name,
+                    'preferred_name': preferred_name
                 }
             )
-            course.students.add(student)
+            CourseStudent.objects.get_or_create(
+                course=course,
+                student=student,
+                name=full_name,
+                preferred_name=preferred_name
+            )
         else:
             instructor, _ = Instructor.objects.get_or_create(
                 user=user,
                 defaults={
                     'instructor_id': f"I{str(user.id).zfill(6)}",
-                    'name': user.get_full_name(),
-                    'preferred_name': getattr(user, 'preferred_name', user.get_full_name()),
+                    'name': full_name,
+                    'preferred_name': preferred_name,
                     'department': 'Not specified'
                 }
             )
             CourseInstructorRole.objects.create(
                 course=course,
                 instructor=instructor,
-                role_type=requested_role
+                role_type=requested_role,
+                name=full_name,
+                preferred_name=preferred_name
             )
 
         return Response({'message': f'User switched to {requested_role}'})
@@ -174,19 +203,23 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='roster')
     def get_roster(self, request, pk=None):
         course = self.get_object()
-        students_data = StudentSerializer(course.students.all(), many=True).data
 
-        cirs = CourseInstructorRole.objects.filter(course=course).select_related('instructor')
-        instructors_data = InstructorSerializer(
-            [c.instructor for c in cirs if c.role_type == 'instructor'],
+        # Fetch students with per-course names
+        course_students = CourseStudent.objects.filter(course=course).select_related('student__user')
+        students_data = CourseStudentSerializer(course_students, many=True).data
+
+        # Instructors grouped by role
+        cirs = CourseInstructorRole.objects.filter(course=course).select_related('instructor__user')
+        instructors_data = CourseInstructorRoleSerializer(
+            [c for c in cirs if c.role_type == 'instructor'],
             many=True
         ).data
-        tas_data = InstructorSerializer(
-            [c.instructor for c in cirs if c.role_type == 'TA'],
+        tas_data = CourseInstructorRoleSerializer(
+            [c for c in cirs if c.role_type == 'TA'],
             many=True
         ).data
-        owners_data = InstructorSerializer(
-            [c.instructor for c in cirs if c.role_type == 'owner'],
+        owners_data = CourseInstructorRoleSerializer(
+            [c for c in cirs if c.role_type == 'owner'],
             many=True
         ).data
 
@@ -206,10 +239,51 @@ class CourseViewSet(viewsets.ModelViewSet):
         if cir:
             return Response({"role": cir.role_type})
 
-        if course.students.filter(user=user).exists():
+        if CourseStudent.objects.filter(course=course, student__user=user).exists():
             return Response({"role": "student"})
 
         return Response({"error": "Not enrolled in this course"}, status=403)
+    
+    @action(detail=True, methods=['put'], url_path='update-name')
+    def update_name(self, request, pk=None):
+        print("REQUEST FOR NAME CHANGE: ", request.data)
+        course = self.get_object()
+        user_id = request.data.get('user_id')
+        new_name = request.data.get('name')
+        new_preferred_name = request.data.get('preferred_name')
+        print("USERID: ", user_id)
+        if not user_id:
+           return Response({'error': 'user_id is required'}, status=400)
+        updated = False
+
+    
+        cs = CourseStudent.objects.filter(course=course, student__user_id=user_id).first()
+        print("CS NAME: ",  CourseStudent.objects.filter(course=course, student__user_id=user_id))
+        if cs:
+          if new_name is not None:
+            cs.name = new_name
+            updated = True
+          if new_preferred_name is not None:
+            cs.preferred_name = new_preferred_name
+            updated = True
+          cs.save()
+
+   
+        cir = CourseInstructorRole.objects.filter(course=course, instructor__user_id=user_id).first()
+        print("CIR NAME: ", cir)
+        if cir:
+          if new_name is not None:
+            cir.name = new_name
+            updated = True
+          if new_preferred_name is not None:
+            cir.preferred_name = new_preferred_name
+            updated = True
+          cir.save()
+
+        if updated:
+           return Response({'status': 'Name(s) updated'})
+        else:
+           return Response({'error': 'User not enrolled in this course'}, status=404)
 
 @extend_schema_view(
     list=extend_schema(description="List all students"),

@@ -35,7 +35,6 @@ export default function CourseDetailClient({ course, assignmentData }: CourseDet
     const fetchRole = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        console.log("Token being used: ", token);
         const res = await axios.get(`http://18.188.140.218:8000/api/courses/${course.id}/user-role/`, {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -108,7 +108,7 @@ export default function CourseBlock({
             e.stopPropagation();
             setShowConfirm(true);
           }}
-          className="absolute bottom-2 right-2 z-20 p-1 text-blue-600 hover:text-blue-800"
+          className="absolute bottom-2 right-2 z-20 p-1 text-red-600 hover:text-red-800"
           aria-label="Leave Course"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5" />

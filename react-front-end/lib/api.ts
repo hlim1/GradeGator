@@ -331,5 +331,20 @@ export const apiFunctions = {
     const response = await api.get(`/instructors/${instructorId}/`);
     return response.data;
   },
+
+  updateCourseUserName: async (
+    courseId: string,
+    userId: number,
+    name?: string,
+    preferred_name?: string
+   ) => {
+    const res = await api.post(`/courses/${courseId}/update-name/`, {
+    user_id: userId,
+    name,
+    preferred_name,
+  });
+  return res.data;
+ },
+
 };
 export default api;

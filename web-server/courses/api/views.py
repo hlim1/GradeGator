@@ -141,7 +141,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='change-role')
     def change_role(self, request, pk=None):
-        print("Incoming request data:", request.data)
+        print("REQUEST FOR ROLE CHANGE:", request.data)
         course = self.get_object()
         user_id = request.data.get('user_id')
         requested_role = request.data.get('requested_role', 'instructor')
@@ -160,6 +160,8 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid role'}, status=400)
 
         # Remove all existing roles
+        print("CIR ROLE: ",  CourseInstructorRole.objects.filter(course=course, instructor__user=user))
+        print("CS ROLE: :",   CourseStudent.objects.filter(course=course, student__user=user))
         CourseInstructorRole.objects.filter(course=course, instructor__user=user).delete()
         CourseStudent.objects.filter(course=course, student__user=user).delete()
 
@@ -172,7 +174,7 @@ class CourseViewSet(viewsets.ModelViewSet):
                     'preferred_name': preferred_name
                 }
             )
-            CourseStudent.objects.create(
+            CourseStudent.objects.get_or_create(
                 course=course,
                 student=student,
                 name=full_name,
@@ -241,6 +243,47 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({"role": "student"})
 
         return Response({"error": "Not enrolled in this course"}, status=403)
+    
+    @action(detail=True, methods=['put'], url_path='update-name')
+    def update_name(self, request, pk=None):
+        print("REQUEST FOR NAME CHANGE: ", request.data)
+        course = self.get_object()
+        user_id = request.data.get('user_id')
+        new_name = request.data.get('name')
+        new_preferred_name = request.data.get('preferred_name')
+        print("USERID: ", user_id)
+        if not user_id:
+           return Response({'error': 'user_id is required'}, status=400)
+        updated = False
+
+    
+        cs = CourseStudent.objects.filter(course=course, student__user_id=user_id).first()
+        print("CS NAME: ",  CourseStudent.objects.filter(course=course, student__user_id=user_id))
+        if cs:
+          if new_name is not None:
+            cs.name = new_name
+            updated = True
+          if new_preferred_name is not None:
+            cs.preferred_name = new_preferred_name
+            updated = True
+          cs.save()
+
+   
+        cir = CourseInstructorRole.objects.filter(course=course, instructor__user_id=user_id).first()
+        print("CIR NAME: ", cir)
+        if cir:
+          if new_name is not None:
+            cir.name = new_name
+            updated = True
+          if new_preferred_name is not None:
+            cir.preferred_name = new_preferred_name
+            updated = True
+          cir.save()
+
+        if updated:
+           return Response({'status': 'Name(s) updated'})
+        else:
+           return Response({'error': 'User not enrolled in this course'}, status=404)
 
 @extend_schema_view(
     list=extend_schema(description="List all students"),

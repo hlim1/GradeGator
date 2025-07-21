@@ -26,37 +26,36 @@ export default function UserEditModal({
 }) {
   const [name, setName] = useState('');
   const [preferredName, setPreferredName] = useState('');
-  const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
 
   useEffect(() => {
     if (user) {
       setName(user.name || '');
       setPreferredName(user.preferred_name || '');
-      setEmail(user.email || '');
       setRole(user.role || '');
     }
   }, [user]);
 
   const handleRoleChange = async () => {
     try {
-      const apiRole = role;
-      console.log("USER" , user);
-      console.log("Changing role for", user.user, "to", apiRole);
-      console.log("Calling changeUserRole with:", courseId, user.user, apiRole);
-      await apiFunctions.changeUserRole(courseId, user.user_id, apiRole);
-      alert('Role updated');
+      console.log("Changing role for", user.user_id, "to", role);
+      await apiFunctions.changeUserRole(courseId, user.user_id, role);
+      onClose();
+      window.location.reload();
     } catch (err) {
-      console.log("ERROR Calling changeUserRole with:", courseId, user.user, apiRole);
-      console.error(err);
-      alert('Failed to update role');
+      console.error("Role update failed:", err);
     }
   };
 
-  const handleSave = async () => {
-    await handleRoleChange();
-    onClose();
-    window.location.reload(); // Re-fetch roster data
+  const handleNameUpdate = async () => {
+    try {
+      console.log("Updating name for", user.user_id);
+      await apiFunctions.updateCourseUserName(courseId, user.user_id, name, preferredName);
+      onClose();
+      window.location.reload();
+    } catch (err) {
+      console.error("Name update failed:", err);
+    }
   };
 
   return (
@@ -65,7 +64,7 @@ export default function UserEditModal({
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
-            Update user details and role in this course.
+            Update user name or role in this course.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,12 +76,10 @@ export default function UserEditModal({
 
           <div>
             <Label>Preferred Name</Label>
-            <Input value={preferredName} onChange={(e) => setPreferredName(e.target.value)} />
-          </div>
-
-          <div>
-            <Label>Email</Label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              value={preferredName}
+              onChange={(e) => setPreferredName(e.target.value)}
+            />
           </div>
 
           <div>
@@ -100,8 +97,11 @@ export default function UserEditModal({
         </div>
 
         <div className="flex justify-end space-x-2 mt-4">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleNameUpdate}>Update Name</Button>
+          <Button onClick={handleRoleChange}>Update Role</Button>
         </div>
       </DialogContent>
     </Dialog>

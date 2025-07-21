@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, status
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.utils.timezone import now
 from django.conf import settings
 
 @extend_schema_view(
@@ -27,29 +28,6 @@ class GradeViewSet(viewsets.ModelViewSet):
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
     parser_classes = [MultiPartParser, FormParser]
-
-    @action(detail=False, methods=['post'], url_path='update-scores')
-    def update_scores(self, request):
-        data = request.data
-
-        for item in data:
-            rubric_id = item.get('rubric_id')
-            score = item.get('score')
-            comment = item.get('comment', '')
-
-            if rubric_id is None or score is None:
-                return Response({"error": "rubric_id and score required."}, status=status.HTTP_400_BAD_REQUEST)
-
-            try:
-                rubric = Rubric.objects.get(id=rubric_id)
-                rubric.score = score
-                rubric.comment = comment
-                rubric.save()
-            except Rubric.DoesNotExist:
-                return Response({"error": f"Rubric with id {rubric_id} not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        return Response({"message": "Scores updated successfully."}, status=status.HTTP_200_OK)
-
 
     def list(self, request, *args, **kwargs):
         submission_id = request.query_params.get('submission')
@@ -211,3 +189,37 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     """
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
+
+    @action(detail=False, methods=['post'], url_path='update-scores')
+    def update_scores(self, request):
+        data = request.data
+
+        for item in data:
+            grade_id = item.get('grade_id')
+            score = item.get('score')
+            comment = item.get('comment', '')
+            position = item.get('position')
+
+            if grade_id is None or score is None:
+                return Response({"error": "grade_id and score are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                grade = Grade.objects.get(id=grade_id)
+                grade.score = score  # This is your manual score field
+                grade.save()
+
+                # Only create feedback if there's a comment
+                if comment.strip() != "":
+                    Feedback.objects.create(
+                        comment=comment,
+                        position=position,
+                        created_at=now(),
+                        grade=grade,
+                        acknowledged_by_student=False,  # default assumption
+                        metadata={},  # fill this out later as needed
+                    )
+
+            except Grade.DoesNotExist:
+                return Response({"error": f"Grade with id {grade_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"message": "Manual scores and feedback updated successfully."}, status=status.HTTP_200_OK)

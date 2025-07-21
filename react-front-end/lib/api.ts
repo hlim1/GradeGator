@@ -338,7 +338,7 @@ export const apiFunctions = {
     name?: string,
     preferred_name?: string
    ) => {
-    const res = await api.post(`/courses/${courseId}/update-name/`, {
+    const res = await api.put(`/courses/${courseId}/update-name/`, {
     user_id: userId,
     name,
     preferred_name,

@@ -244,7 +244,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         return Response({"error": "Not enrolled in this course"}, status=403)
     
-    @action(detail=True, methods=['post'], url_path='update-name')
+    @action(detail=True, methods=['put'], url_path='update-name')
     def update_name(self, request, pk=None):
         print("REQUEST FOR NAME CHANGE: ", request.data)
         course = self.get_object()

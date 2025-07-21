@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Course, Assignment, apiFunctions } from '@/lib/api';
 import { FaSearch } from 'react-icons/fa';
-import UploadModal from '@/app/components/UploadModal';
+//import UploadModal from '@/app/components/UploadModal';
 import CourseSidebarStudent from '@/app/components/student/CourseSidebarStudent';
 import { format } from 'date-fns';
 import Files from '../Files';
@@ -33,6 +34,7 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     if (sessionStorage.getItem("studentIdForFeedback")) {
@@ -85,7 +87,8 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
 
   const handleAssignmentClick = (assignment: Assignment) => {
     if (assignment.is_visible_to_students) {
-      setSelectedAssignment(assignment);
+      sessionStorage.setItem('assignmentName', assignment.name);
+      router.push(`/course/${course.id}/assignment/${assignment.id}/submitted-feedback`);
     }
   };
 
@@ -134,25 +137,23 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
                 filteredAssignments.map((assignment) => (
                   <div
                     key={assignment.id}
-                    onClick={() => handleAssignmentClick(assignment)}
                     className={`grid grid-cols-5 gap-4 p-4 border-b ${
-                      assignment.is_visible_to_students ? 'hover:bg-gray-50 cursor-pointer' : 'opacity-50'
+                      assignment.is_visible_to_students ? 'hover:bg-gray-50' : 'opacity-50'
                     }`}
                   >
                     <div className="text-gray-800">
-                      {assignment.name}
+                      <span
+                        onClick={() => handleAssignmentClick(assignment)}
+                        className={"cursor-pointer underline text-blue-500 hover:text-blue-700"}
+                      >
+                        {assignment.name}
+                      </span>
                       {!assignment.is_visible_to_students && (
                         <span className="ml-2 text-sm text-gray-500">(Not yet visible)</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                       {getStatusBadge(assignment)}
-                      <a
-                        href={`/course/${course.id}/assignment/${assignment.id}/submitted-feedback`}
-                        className="text-blue-500 hover:text-blue-700 text-sm"
-                      >
-                        View Feedback
-                      </a>
                     </div>
                     <div className="text-gray-600">
                       {format(new Date(assignment.created_at), 'MMM d, yyyy')}
@@ -185,14 +186,6 @@ export default function CourseStudentView({ course, assignmentData }: CourseStud
     <div className="flex flex-1">
       <CourseSidebarStudent activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="flex-1 p-8">{renderContent()}</main>
-
-      <UploadModal
-        isOpen={!!selectedAssignment}
-        onClose={() => setSelectedAssignment(null)}
-        assignmentName={selectedAssignment?.name || ''}
-        assignmentId={selectedAssignment?.id || 0}
-        courseId={course.id}
-      />
     </div>
   );
 }

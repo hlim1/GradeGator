@@ -73,6 +73,8 @@ const CreateAssignment = () => {
         points: parseInt(autoGraderPoints, 10),
         due_date: new Date(dueDate).toISOString(),
         release_date: new Date(releaseDate).toISOString().split('T')[0],
+        late_due_date: lateDueDate ? new Date(lateDueDate).toISOString() : null,
+        allow_late_submissions: allowLateSubmissions,
         is_visible_to_students: true,
         is_manually_graded: enableManual,
         course: parseInt(courseId as string, 10)

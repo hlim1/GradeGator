@@ -1,6 +1,7 @@
 import json
 from rest_framework.permissions import AllowAny
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from grading.models import Grade, Feedback
 from assignments.models import Submission
 from .serializers import GradeSerializer, FeedbackSerializer
@@ -8,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, status
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.utils.timezone import now
 from django.conf import settings
 
 @extend_schema_view(
@@ -103,12 +105,53 @@ class GradeViewSet(viewsets.ModelViewSet):
         # Determine if this submission should be finalized
         is_finalized = not is_manual  # Finalized only if no manual grading needed
 
+        # Parse outer JSON (full result)
+        result = json.loads(raw) if raw else {}
+
+        # Extract rubric from outer JSON (not nested inside output)
+        rubric = result.get('rubric', [])
+
+        # Extract nested JSON inside 'output' string
+        raw_output = result.get('output', '')
+        start = raw_output.find('{')
+        if start != -1:
+            nested = json.loads(raw_output[start:])
+        else:
+            nested = {}
+
+        test_results = nested.get('testResults', [])
+
+        auto_score = 0
+        total_auto = 0
+
+        for i in range(len(rubric)):
+            max_score = rubric[i].get('max_score', 0)
+            total_auto += max_score
+            # Add max_score if test passed
+            if i < len(test_results) and test_results[i].get('passed'):
+                auto_score += max_score
+
+        # Manual scoring placeholders
+        manual_scores = {}
+        manual_total = 0
+        manual_max_total = 0
+
+        total_score = auto_score + manual_total
+
         defaults = {
-            'score': nested.get('total'),
-            'feedback': json.dumps(nested),
+            'score': total_score,
+            'feedback': json.dumps(result),  # send prettified nested testResults JSON as feedback
             'is_finalized': is_finalized,
             'submitted_files_json': submitted_files,
+
+            'auto_points': auto_score,
+            'auto_max_points': total_auto,
+
+            'question_scores': manual_scores,  # empty for now
+            'rubric_max_points': manual_max_total,
         }
+
+
 
         if uploaded_file:
             defaults['submitted_file'] = uploaded_file
@@ -146,3 +189,37 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     """
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
+
+    @action(detail=False, methods=['post'], url_path='update-scores')
+    def update_scores(self, request):
+        data = request.data
+
+        for item in data:
+            grade_id = item.get('grade_id')
+            score = item.get('score')
+            comment = item.get('comment', '')
+            position = item.get('position')
+
+            if grade_id is None or score is None:
+                return Response({"error": "grade_id and score are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                grade = Grade.objects.get(id=grade_id)
+                grade.score = score  # This is your manual score field
+                grade.save()
+
+                # Only create feedback if there's a comment
+                if comment.strip() != "":
+                    Feedback.objects.create(
+                        comment=comment,
+                        position=position,
+                        created_at=now(),
+                        grade=grade,
+                        acknowledged_by_student=False,  # default assumption
+                        metadata={},  # fill this out later as needed
+                    )
+
+            except Grade.DoesNotExist:
+                return Response({"error": f"Grade with id {grade_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"message": "Manual scores and feedback updated successfully."}, status=status.HTTP_200_OK)

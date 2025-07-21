@@ -39,12 +39,15 @@ class Assignment(models.Model):
     grade_method = models.CharField(max_length=10, choices=GRADE_METHOD_CHOICES, default='POINTS', blank=True)
     points = models.IntegerField(default=0)
     due_date = models.DateTimeField()
-    release_date = models.DateField(null=True, blank=True)
+    release_date = models.DateTimeField()
+    late_due_date = models.DateTimeField(null=True, blank=True)
+    allow_late_submissions = models.BooleanField(default=False)
     is_visible_to_students = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_manually_graded = models.BooleanField(default=False)
     questions = models.JSONField(default=list)
+    autograder_name = models.CharField(null=True)
     
     def __str__(self):
         return f"{self.name} ({self.assignment_id})"

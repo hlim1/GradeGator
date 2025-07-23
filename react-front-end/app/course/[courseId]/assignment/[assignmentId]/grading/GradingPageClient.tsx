@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Submission, Assignment, apiFunctions } from '@/lib/api';
 import SubmissionFeedback from '@/app/components/SubmissionFeedback';
 import GradingSidebar from '@/app/components/GradingSidebar';
@@ -19,21 +18,26 @@ export default function GradingPageClient({ assignmentId }: Props) {
   const [submissionQueue, setSubmissionQueue] = useState<Submission[]>([]);
   const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
   const [rubricSelections, setRubricSelections] = useState<Record<string, boolean>>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
 
+  // 1. Initial load: get assignment and queue
   useEffect(() => {
-    const fetchData = async () => {
-      if (!currentSubmission) return;
+    const fetchInitialData = async () => {
+      const assign = await apiFunctions.getAssignment(assignmentId);
+      setAssignment(assign);
 
-      // Step 2: Get the full assignment object
-      const res = await apiFunctions.getAssignment(assignmentId);
-      setAssignment(res);
+      const subs = await apiFunctions.getSubmissions(assignmentId);
 
-      const grade = await apiFunctions.getGradingResults(currentSubmission.id);
-      setGradingResults(grade);
+      if (subs.length > 0) {
+        setCurrentIndex(0);
+        setSubmissionQueue(subs);
+      } else {
+        setSubmissionQueue([]);
+        setCurrentIndex(-1); // or something invalid to indicate no submissions
+      }
 
-      if (res?.assignment) {
-        // Extract rubric from assignment.questions
-        const questionRubrics = res.assignment.questions.flatMap((q: any) =>
+      if (assign?.assignment) {
+        const questionRubrics = assign.assignment.questions.flatMap((q: any) =>
           (q.rubric ?? []).map((r: any) => ({
             title: q.title,
             points: r.points,
@@ -42,15 +46,46 @@ export default function GradingPageClient({ assignmentId }: Props) {
         );
         setRubric(questionRubrics);
       }
+    };
+
+    fetchInitialData();
+  }, [assignmentId]);
+
+  // 2. Whenever currentSubmission changes, fetch its grading info
+  useEffect(() => {
+    const fetchSubmissionData = async () => {
+      if (!currentSubmission) {
+        setGradingResults(null);
+        setParsedFeedback(null);
+        setSubmittedFiles([]);
+        return;
+      };
+
+      const grade = await apiFunctions.getGradingResults(currentSubmission.id);
+      setGradingResults(grade);
 
       if (grade?.feedback) {
         try {
           const outer = JSON.parse(grade.feedback);
-          setParsedFeedback(outer?.output ?? outer); // fallback if there's no output
+          let parsed = null;
+
+          if (typeof outer?.output === 'string') {
+            try {
+              // Try to find where the embedded JSON starts
+              const startIndex = outer.output.indexOf('{');
+              if (startIndex !== -1) {
+                parsed = JSON.parse(outer.output.slice(startIndex));
+              }
+            } catch (e) {
+              console.warn('Nested feedback parse failed', e);
+            }
+          }
+
+          setParsedFeedback(parsed ?? outer);
         } catch (e) {
           console.warn('Failed to parse feedback', e);
           setParsedFeedback(null);
-  }
+        }
       }
 
       if (grade?.submitted_files_json) {
@@ -62,40 +97,29 @@ export default function GradingPageClient({ assignmentId }: Props) {
       }
     };
 
-    fetchData();
-  }, [assignmentId, currentSubmission]);
+    fetchSubmissionData();
+  }, [currentSubmission]);
 
   useEffect(() => {
-    async function fetchData() {
-      const subs = await apiFunctions.getSubmissions(assignmentId);
-      const assign = await apiFunctions.getAssignment(assignmentId);
-
-      setSubmissionQueue(subs);
-      if (subs.length > 0) {
-        setCurrentSubmission(subs[0]);
-      }
-
-
-      setAssignment(assign);
+    if (currentIndex >= 0 && currentIndex < submissionQueue.length) {
+      setCurrentSubmission(submissionQueue[currentIndex]);
+    } else {
+      setCurrentSubmission(null);
     }
-    fetchData();
-  }, [assignmentId]);
+  }, [currentIndex, submissionQueue]);
 
   function handleNextSubmission() {
-    const newQueue = [...submissionQueue];
-    newQueue.shift(); // remove current
-    const next = newQueue[0] || null;
-
-    setSubmissionQueue(newQueue);
-    setCurrentSubmission(next);
-
-    // Clear rubric selections for next student
-    setRubricSelections({});
+    setCurrentIndex((prev) => {
+      if (prev + 1 < submissionQueue.length) {
+        return prev + 1;
+      } else {
+        return prev; // don’t increment beyond last index
+      }
+    });
   }
 
   function computeManualGrade(): number {
-    const totalPoints = Object.values(rubricSelections).filter(v => v).length;
-    return totalPoints;
+    return Object.values(rubricSelections).filter(Boolean).length;
   }
 
   if (!assignment) return <div>Loading...</div>;
@@ -106,7 +130,6 @@ export default function GradingPageClient({ assignmentId }: Props) {
         <div>
           <h2>Grading: {currentSubmission.student_detail?.name}</h2>
           <SubmissionFeedback
-            rubric={rubric}
             parsedFeedback={parsedFeedback}
             submittedFiles={submittedFiles}
             gradingResults={gradingResults}

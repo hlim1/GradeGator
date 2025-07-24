@@ -41,14 +41,13 @@ export default function GradingPageClient({ courseId, assignmentId }: Props) {
         setCurrentIndex(-1); // or something invalid to indicate no submissions
       }
 
-      if (assign?.assignment) {
-        const questionRubrics = assign.assignment.questions.flatMap((q: any) =>
-          (q.rubric ?? []).map((r: any) => ({
-            title: q.title,
-            points: r.points,
-            rubrics: r.rubrics
-          }))
-        );
+      if (assign) {
+        const questionRubrics = assign.questions.map((q: any) => ({
+          title: q.title,
+          points: q.points,
+          rubrics: q.rubrics || [],
+        }));
+        console.log("Processed questionRubrics:", questionRubrics);
         setRubric(questionRubrics);
       }
     };
@@ -125,14 +124,21 @@ export default function GradingPageClient({ courseId, assignmentId }: Props) {
   }, [currentIndex, submissionQueue, courseId, assignmentId, router]);
 
 
-  function handleNextSubmission() {
-    setCurrentIndex((prev) => {
-      if (prev + 1 < submissionQueue.length) {
-        return prev + 1;
-      } else {
-        return submissionQueue.length; // force out of bounds → triggers end screen
-      }
-    });
+  async function handleNextSubmission() {
+    try{
+      const grade = await apiFunctions.postManualGrade(currentSubmission.id, rubricSelections);
+      console.log("Manual grade submitted", grade);
+      setRubricSelections({});
+      setCurrentIndex((prev) => {
+        if (prev + 1 < submissionQueue.length) {
+          return prev + 1;
+        } else {
+          return submissionQueue.length; // force out of bounds → triggers end screen
+        }
+      });
+    } catch (error) {
+    console.error("Failed to submit manual grade", error);
+    }
   }
 
   function computeManualGrade(): number {

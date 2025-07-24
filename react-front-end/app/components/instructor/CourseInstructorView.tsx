@@ -38,6 +38,7 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
   const [isLoading, setIsLoading] = useState(true);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
   const [students, setStudents] = useState([]);
+  const [gradesByAssignment, setGradesByAssignment] = useState<{[assignmentName: string]: { studentName: string; score: string }[];}>({});
   const [grades, setGrades] = useState([]); // contains { studentId, assignmentId, score }
   const router = useRouter();
   const params = useParams();
@@ -82,12 +83,23 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
   useEffect(() => {
     const fetchGradebookData = async () => {
       try {
-        const studentsRes = await apiFunctions.getCourseStudents(courseId);
-        const gradesRes = await apiFunctions.getGradebook(courseId); // You'll need to implement this
-        setStudents(studentsRes);
-        setGrades(gradesRes);
-      } catch (err) {
-        console.error('Error loading gradebook:', err);
+        const data = await apiFunctions.getGradebook(courseId);
+
+        const groupedGrades: {
+          [assignmentName: string]: { studentName: string; score: string }[];
+        } = {};
+
+        data.forEach(item => {
+          const { assignment, grades } = item;
+          groupedGrades[assignment] = Object.entries(grades).map(([studentName, score]) => ({
+            studentName,
+            score,
+          }));
+        });
+
+        setGradesByAssignment(groupedGrades);
+      } catch (error) {
+        console.error('Error fetching gradebook data:', error);
       }
     };
 
@@ -276,33 +288,42 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
         );
       case 'gradebook':
         return (
-          <div className="overflow-auto">
-            <h2 className="text-2xl font-bold mb-4">Grade Book</h2>
-            <table className="min-w-full table-auto border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border px-4 py-2 text-left">Student</th>
-                  {assignments.map(a => (
-                    <th key={a.id} className="border px-4 py-2 text-left">{a.name}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {students.map(student => (
-                  <tr key={student.id}>
-                    <td className="border px-4 py-2">{student.name}</td>
-                    {assignments.map(assignment => {
-                      const submission = grades.find(g => g.studentId === student.id && g.assignmentId === assignment.id);
-                      return (
-                        <td key={assignment.id} className="border px-4 py-2">
-                          {submission ? `${submission.score}/${assignment.points}` : '—'}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Grade Book</h2>
+            {Object.entries(gradesByAssignment).length === 0 && (
+              <p>No grades yet</p>
+            )}
+            {Object.entries(gradesByAssignment).map(([assignmentName, grades]) => (
+              <details key={assignmentName} className="mb-4 bg-white rounded shadow">
+                <summary className="cursor-pointer px-4 py-3 font-medium bg-gray-100 border border-gray-300 rounded-t">
+                  {assignmentName}
+                </summary>
+                <div className="px-4 py-2 border border-t-0 border-gray-300 rounded-b">
+                  <table className="w-full table-auto border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="text-left px-3 py-2 border">Student</th>
+                        <th className="text-left px-3 py-2 border">Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grades.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="text-gray-500 text-center">No grades yet</td>
+                        </tr>
+                      ) : (
+                        grades.map(({ studentName, score }) => (
+                          <tr key={studentName} className="border-t">
+                            <td className="px-3 py-2 border">{studentName}</td>
+                            <td className="px-3 py-2 border">{score}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))}
           </div>
         );
       case 'roster':

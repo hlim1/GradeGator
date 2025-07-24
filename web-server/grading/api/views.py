@@ -3,10 +3,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from grading.models import Grade, Feedback
-from assignments.models import Submission
+from assignments.models import Assignment, Submission
 from .serializers import GradeSerializer, FeedbackSerializer
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework import viewsets, status
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.utils.timezone import now
@@ -27,7 +27,7 @@ class GradeViewSet(viewsets.ModelViewSet):
     """
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def list(self, request, *args, **kwargs):
         submission_id = request.query_params.get('submission')
@@ -45,12 +45,17 @@ class GradeViewSet(viewsets.ModelViewSet):
             return super().list(request, *args, **kwargs)
 
     def initialize_request(self, request, *args, **kwargs):
-        django_request = super().initialize_request(request, *args, **kwargs)
-        if django_request.FILES:
-            print("🔥 FILES detected BEFORE create()")
-            for name, file in django_request.FILES.items():
-                print(f"File name: {file.name}, size: {file.size}, content_type: {file.content_type}")
-        return django_request
+        # Only check files if multipart/form-data
+        if request.content_type.startswith('multipart'):
+            django_request = super().initialize_request(request, *args, **kwargs)
+            if django_request.FILES:
+                print("🔥 FILES detected BEFORE create()")
+                for name, file in django_request.FILES.items():
+                    print(f"File name: {file.name}, size: {file.size}, content_type: {file.content_type}")
+            return django_request
+        else:
+            # For JSON requests just parse normally without checking files
+            return super().initialize_request(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -174,6 +179,127 @@ class GradeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
         )
 
+    @action(detail=False, methods=['post'], url_path='manual-grade')
+    def manual_grade(self, request):
+        """
+        Accepts manual grading input:
+        {
+          "submission": <submission_id>,
+          "manual_scores": {
+            "question_index-rubric_index-rubric_name": boolean,
+          }
+        }
+        """
+        data = request.data
+        submission_id = data.get('submission')
+        raw_manual_scores = data.get('manual_scores', {})
+
+        if not submission_id:
+            return Response({'error': 'submission ID is required'}, status=400)
+
+        try:
+            grade = Grade.objects.get(submission_id=submission_id)
+        except Grade.DoesNotExist:
+            return Response({'error': 'Grade does not exist for this submission'}, status=404)
+
+        submission = grade.submission
+        assignment = submission.assignment
+        questions = assignment.questions  # list of question dicts
+
+        # Step 1: Initialize manual_scores as { "0": [false, false, ...], ... }
+        manual_scores = {}
+
+        for q_index, question in enumerate(questions):
+            rubric_count = len(question.get("rubrics", []))
+            manual_scores[str(q_index)] = [False] * rubric_count
+
+        # Step 2: Fill in selected rubrics from raw_manual_scores
+        for key, selected in raw_manual_scores.items():
+            if not selected:
+                continue
+            try:
+                parts = key.split("-")
+                q_index = int(parts[0])
+                r_index = int(parts[1])
+                manual_scores[str(q_index)][r_index] = True
+            except (IndexError, ValueError, KeyError):
+                continue  # skip malformed keys
+
+        # Step 3: Compute question_scores using subtractive rubrics
+        question_scores = {}
+        manual_total = 0
+
+        for q_index_str, rubric_bools in manual_scores.items():
+            q_index = int(q_index_str)
+            question = questions[q_index]
+            rubrics = question.get("rubrics", [])
+            max_points = question.get("points", 0)
+
+            deductions = 0
+            for r_index, selected in enumerate(rubric_bools):
+                if selected and r_index < len(rubrics):
+                    deductions += rubrics[r_index].get("points", 0)
+
+            earned = max(max_points - deductions, 0)
+            question_scores[q_index_str] = {
+                "earned": earned,
+                "max": max_points
+            }
+            manual_total += earned
+
+        # Save rubric selections + computed scores
+        grade.question_scores = question_scores
+        grade.rubric_max_points = sum(q.get("points", 0) for q in questions)
+        auto_points = grade.auto_points or 0
+        grade.score = auto_points + manual_total
+        grade.is_finalized = True
+        grade.save()
+
+        serializer = self.get_serializer(grade)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="gradebook")
+    def gradebook(self, request):
+        course_id = request.query_params.get("course_id")
+        if not course_id:
+            return Response({"error": "course_id is required"}, status=400)
+
+        assignments = Assignment.objects.filter(course_id=course_id)
+        result = []
+
+        for assignment in assignments:
+            grades = Grade.objects.filter(submission__assignment=assignment)
+
+            grade_dict = {}
+            for grade in grades:
+                student_name = grade.submission.student.name
+                score = f"{grade.score or 0}/{(grade.auto_max_points + grade.rubric_max_points) or 0}"
+                grade_dict[student_name] = score
+
+            result.append({
+                "assignment": assignment.name,
+                "grades": grade_dict
+            })
+
+        return Response(result)
+
+    @action(detail=False, methods=["get"], url_path="by-submission")
+    def get_by_submission(self, request):
+        """
+        GET /api/grades/by-submission/?submission=<submission_id>
+        """
+        submission_id = request.query_params.get("submission")
+        if not submission_id:
+            return Response({"error": "submission parameter is required"}, status=400)
+
+        try:
+            grade = Grade.objects.get(submission__id=submission_id)
+        except Grade.DoesNotExist:
+            return Response({"error": "Grade not found"}, status=404)
+
+        serializer = self.get_serializer(grade)
+        return Response(serializer.data, status=200)
+
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),
     create=extend_schema(description="Create a new feedback item"),
@@ -189,37 +315,3 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     """
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
-
-    @action(detail=False, methods=['post'], url_path='update-scores')
-    def update_scores(self, request):
-        data = request.data
-
-        for item in data:
-            grade_id = item.get('grade_id')
-            score = item.get('score')
-            comment = item.get('comment', '')
-            position = item.get('position')
-
-            if grade_id is None or score is None:
-                return Response({"error": "grade_id and score are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-            try:
-                grade = Grade.objects.get(id=grade_id)
-                grade.score = score  # This is your manual score field
-                grade.save()
-
-                # Only create feedback if there's a comment
-                if comment.strip() != "":
-                    Feedback.objects.create(
-                        comment=comment,
-                        position=position,
-                        created_at=now(),
-                        grade=grade,
-                        acknowledged_by_student=False,  # default assumption
-                        metadata={},  # fill this out later as needed
-                    )
-
-            except Grade.DoesNotExist:
-                return Response({"error": f"Grade with id {grade_id} not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        return Response({"message": "Manual scores and feedback updated successfully."}, status=status.HTTP_200_OK)

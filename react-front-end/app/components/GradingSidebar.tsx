@@ -26,6 +26,35 @@ export default function GradingSidebar({
   rubricSelections,
   onToggle,
 }: GradingSidebarProps) {
+
+  console.log("Rubric prop:", rubric);
+
+  function computeManualGrade(): number {
+    let total = 0;
+
+    rubric.forEach((question, qIndex) => {
+      let questionScore = question.points;
+
+      question.rubrics.forEach((item, rIndex) => {
+        const uniqueKey = `${qIndex}-${rIndex}-${item.description}`;
+        if (rubricSelections[uniqueKey]) {
+          if (item.subtract) {
+            questionScore -= item.points;
+          } else if (item.add) {
+            questionScore += item.points;
+          }
+        }
+      });
+
+      // Clamp to 0 if negative
+      if (questionScore < 0) questionScore = 0;
+
+      total += questionScore;
+    });
+
+    return total;
+  }
+
   return (
     <div className="fixed top-0 right-0 h-full w-96 bg-white shadow-lg z-50 p-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
@@ -50,6 +79,10 @@ export default function GradingSidebar({
           })}
         </div>
       ))}
+
+      <div className="mt-4 font-semibold">
+        Manual Grade: {computeManualGrade()} / {rubric.reduce((acc, q) => acc + q.points, 0)}
+      </div>
     </div>
   );
 }

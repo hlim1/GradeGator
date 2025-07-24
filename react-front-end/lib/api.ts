@@ -159,6 +159,18 @@ export const apiFunctions = {
     return response.data;
   },
 
+  getGradebook: async (courseId: number): Promise<any> => {
+    const response = await api.get(`/grades/gradebook/?course_id=${courseId}`);
+    return response.data;
+  },
+
+  getGradeBySubmissionId: async (submissionId: number): Promise<Grade> => {
+    const response = await api.get<Grade>('/grades/by-submission/', {
+      params: { submission: submissionId }
+    });
+    return response.data;
+  },
+
   checkCourse: async (courseCode: string): Promise<Course> => {
     const response = await api.get<Course>('/courses/by-code/', {
       params: { code: courseCode }
@@ -216,12 +228,12 @@ export const apiFunctions = {
     return response.data.filter(assignment => assignment.course === courseId);
   },
 
-  updateManualFeedbackScores: async (gradeId: number, data: any) => {
-    const response = await api.patch(`/api/grades/${gradeId}/update_scores/`, {
-      params: {
-        question_scores: data
-      }
+  postManualGrade: async (submissionId: number, manualScores: Record<string, boolean>): Promise<Grade> => {
+    const response = await api.post<Grade>('/grades/manual-grade/', {
+      submission: submissionId,
+      manual_scores: manualScores,
     });
+    return response.data;
   },
 
   getSubmissions: async (): Promise<Submission[]> => {

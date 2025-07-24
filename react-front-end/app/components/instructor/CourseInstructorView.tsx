@@ -37,6 +37,9 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
+  const [students, setStudents] = useState([]);
+  const [gradesByAssignment, setGradesByAssignment] = useState<{[assignmentName: string]: { studentName: string; score: string }[];}>({});
+  const [grades, setGrades] = useState([]); // contains { studentId, assignmentId, score }
   const router = useRouter();
   const params = useParams();
   const courseId = params.courseId as string;
@@ -76,6 +79,34 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
       setAssignments(prev => [...prev, newAssignment]);
     }
   }, [assignmentData, course.id]);
+
+  useEffect(() => {
+    const fetchGradebookData = async () => {
+      try {
+        const data = await apiFunctions.getGradebook(courseId);
+
+        const groupedGrades: {
+          [assignmentName: string]: { studentName: string; score: string }[];
+        } = {};
+
+        data.forEach(item => {
+          const { assignment, grades } = item;
+          groupedGrades[assignment] = Object.entries(grades).map(([studentName, score]) => ({
+            studentName,
+            score,
+          }));
+        });
+
+        setGradesByAssignment(groupedGrades);
+      } catch (error) {
+        console.error('Error fetching gradebook data:', error);
+      }
+    };
+
+    if (activeTab === 'gradebook') {
+      fetchGradebookData();
+    }
+  }, [activeTab, courseId]);
 
   const filteredAssignments = assignments.filter(assignment => {
     const matchesSearch = assignment.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -257,9 +288,42 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
         );
       case 'gradebook':
         return (
-          <div className="p-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Grade Book</h2>
-            <p className="text-gray-600 mt-2">Grade book content coming soon...</p>
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Grade Book</h2>
+            {Object.entries(gradesByAssignment).length === 0 && (
+              <p>No grades yet</p>
+            )}
+            {Object.entries(gradesByAssignment).map(([assignmentName, grades]) => (
+              <details key={assignmentName} className="mb-4 bg-white rounded shadow">
+                <summary className="cursor-pointer px-4 py-3 font-medium bg-gray-100 border border-gray-300 rounded-t">
+                  {assignmentName}
+                </summary>
+                <div className="px-4 py-2 border border-t-0 border-gray-300 rounded-b">
+                  <table className="w-full table-auto border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="text-left px-3 py-2 border">Student</th>
+                        <th className="text-left px-3 py-2 border">Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grades.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="text-gray-500 text-center">No grades yet</td>
+                        </tr>
+                      ) : (
+                        grades.map(({ studentName, score }) => (
+                          <tr key={studentName} className="border-t">
+                            <td className="px-3 py-2 border">{studentName}</td>
+                            <td className="px-3 py-2 border">{score}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))}
           </div>
         );
       case 'roster':

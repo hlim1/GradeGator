@@ -1,15 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Submission, Assignment, apiFunctions } from '@/lib/api';
 import SubmissionFeedback from '@/app/components/SubmissionFeedback';
 import GradingSidebar from '@/app/components/GradingSidebar';
 
 interface Props {
+  courseId: string;
   assignmentId: string;
 }
 
-export default function GradingPageClient({ assignmentId }: Props) {
+export default function GradingPageClient({ courseId, assignmentId }: Props) {
+  const router = useRouter();
+
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [gradingResults, setGradingResults] = useState<any | null>(null);
   const [parsedFeedback, setParsedFeedback] = useState<ParsedFeedback | null>(null);
@@ -26,11 +30,12 @@ export default function GradingPageClient({ assignmentId }: Props) {
       const assign = await apiFunctions.getAssignment(assignmentId);
       setAssignment(assign);
 
-      const subs = await apiFunctions.getSubmissions(assignmentId);
+      const subs = await apiFunctions.getAssignmentSubmissions(assignmentId);
 
       if (subs.length > 0) {
         setCurrentIndex(0);
         setSubmissionQueue(subs);
+        console.log("current submissions: ", subs);
       } else {
         setSubmissionQueue([]);
         setCurrentIndex(-1); // or something invalid to indicate no submissions
@@ -108,12 +113,24 @@ export default function GradingPageClient({ assignmentId }: Props) {
     }
   }, [currentIndex, submissionQueue]);
 
+  useEffect(() => {
+    if (currentIndex >= submissionQueue.length && submissionQueue.length > 0) {
+      // Delay navigation to allow "All submissions graded!" message to show
+      const timeout = setTimeout(() => {
+        router.push(`/course/${courseId}/assignment/${assignmentId}/assignment-details`);
+      }, 1000); // 1 second delay
+
+      return () => clearTimeout(timeout);
+    }
+  }, [currentIndex, submissionQueue, courseId, assignmentId, router]);
+
+
   function handleNextSubmission() {
     setCurrentIndex((prev) => {
       if (prev + 1 < submissionQueue.length) {
         return prev + 1;
       } else {
-        return prev; // don’t increment beyond last index
+        return submissionQueue.length; // force out of bounds → triggers end screen
       }
     });
   }

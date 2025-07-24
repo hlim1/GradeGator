@@ -28,6 +28,11 @@ interface RubricEntry {
   max_score: number;
 }
 
+interface QuestionScores {
+  [questionIndex: string]: boolean[]; // e.g. "0": [true, false]
+}
+
+
 export default function SubmittedFeedbackPage() {
   const router = useRouter();
 
@@ -46,6 +51,7 @@ export default function SubmittedFeedbackPage() {
   const [assignmentName, setAssignmentName] = useState<string | null>(null);
   const [isManuallyGraded, setIsManuallyGraded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rubricScores, setRubricScores] = useState<QuestionScores>({});~
 
   // Initialize ids and session info once on mount
   useEffect(() => {
@@ -90,6 +96,10 @@ export default function SubmittedFeedbackPage() {
         console.log('Grading results:', res);
 
         setGrade(res);
+
+        const grade = await apiFunctions.getGradeBySubmissionId(submissionId);
+        console.log('Rubric scores:', grade.question_scores);
+        setRubricScores(grade.question_scores);
 
         // Parse JSON feedback if exists
         if (res?.feedback) {
@@ -152,6 +162,47 @@ export default function SubmittedFeedbackPage() {
     }, 0);
     return { totalEarned, totalMax };
   }, [rubric, parsedFeedback]);
+
+  // Inside your SubmittedFeedbackPage component
+
+  // Calculate manual scores per question and total
+  const manualScores = useMemo(() => {
+    if (!assignment?.questions) return { totalEarned: 0, totalMax: 0, questionScores: {} };
+
+    let totalMax = 0;
+    let totalEarned = 0;
+    const questionScores: Record<number, number> = {};
+
+    assignment.questions.forEach((question, questionIndex) => {
+      totalMax += question.points;
+
+      // Start with full points
+      let score = question.points;
+
+      // Go through rubrics, if awarded, adjust score by subtractive or additive points
+      question.rubrics?.forEach((rubric, rubricIndex) => {
+        const key = `${questionIndex}-${rubricIndex}-${rubric.description}`;
+        const isAwarded = rubricScores[key];
+
+        if (isAwarded) {
+          if (rubric.subtract) {
+            score -= rubric.points; // subtract points if rubric subtractive
+          } else if (rubric.add) {
+            score += rubric.points; // add points if rubric additive
+          }
+        }
+      });
+
+      // Clamp score to [0, question.points]
+      if (score < 0) score = 0;
+      if (score > question.points) score = question.points;
+
+      questionScores[questionIndex] = score;
+      totalEarned += score;
+    });
+
+    return { totalEarned, totalMax, questionScores };
+  }, [assignment, rubricScores]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -244,51 +295,51 @@ export default function SubmittedFeedbackPage() {
             </div>
 
             <div className="border rounded-lg p-4">
-              <h2 className="text-lg font-semibold text-gray-700 mb-2">Manual Feedback</h2>
-              {isManuallyGraded ? (
-                <div>
-                  {assignment.questions?.map((question, index) => {
-                    const questionGrade = grade?.question_scores?.[index.toString()];
-                    return (
-                      <div key={index} className="mb-2">
-                        <p className="font-medium text-gray-800">
-                          {question.title} - [{question.points} pts]
-                        </p>
-
-                        {questionGrade?.score !== undefined && (
-                          <p className="ml-2 text-sm text-blue-600">
-                            Score Given: {questionGrade.score} / {question.points}
-                          </p>
-                        )}
-
-                        {question.rubrics?.map((rubric, i) => {
-                          const rubricGrade = questionGrade?.rubrics?.[i.toString()];
-                          const isAwarded = rubricGrade?.awarded;
-
-                          return (
-                            <div
-                              key={i}
-                              className={`ml-4 text-sm ${
-                                isAwarded === true
-                                  ? 'text-green-700 font-semibold'
-                                  : isAwarded === false
-                                  ? 'text-red-500 line-through'
-                                  : 'text-gray-600'
-                              }`}
-                            >
-                              • {rubric.description} ({rubric.points} pts)
-                              {rubric.add && ' [+]'}
-                              {rubric.subtract && ' [-]'}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold text-gray-700">Manual Feedback</h2>
+                <div className="font-semibold text-gray-700">
+                  Total: {manualScores.totalEarned} / {manualScores.totalMax}
                 </div>
-              ) : (
-                <p className="text-sm text-gray-600 italic">No manual feedback available.</p>
-              )}
+              </div>
+              {isManuallyGraded ? (
+                  <div>
+                    {assignment.questions?.map((question, questionIndex) => {
+                      const questionScore = manualScores.questionScores[questionIndex] ?? 0;
+
+                      return (
+                        <div key={questionIndex} className="mb-4">
+                          <p className="font-medium text-gray-800">
+                            {question.title} - [{questionScore} / {question.points} pts]
+                          </p>
+
+                          {question.rubrics?.map((rubric, rubricIndex) => {
+                            const key = `${questionIndex}-${rubricIndex}-${rubric.description}`;
+                            const isAwarded = rubricScores[key];
+
+                            return (
+                              <div
+                                key={rubricIndex}
+                                className={`ml-4 text-sm ${
+                                  isAwarded === true
+                                    ? rubric.subtract
+                                      ? 'text-red-500 font-semibold line-through'
+                                      : 'text-green-700 font-semibold'
+                                    : 'text-gray-600'
+                                }`}
+                              >
+                                • {rubric.description} ({rubric.points} pts)
+                                {rubric.add && ' [+]'}
+                                {rubric.subtract && ' [-]'}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600 italic">No manual feedback available.</p>
+                )}
             </div>
           </>
         )}
@@ -301,8 +352,6 @@ export default function SubmittedFeedbackPage() {
           assignmentId={parseInt(assignmentId ?? '0')}
           courseId={courseId ?? ''}
         />
-
-        
       </div>
     </div>
   );

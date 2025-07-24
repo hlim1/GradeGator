@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from grading.models import Grade, Feedback
-from assignments.models import Submission
+from assignments.models import Assignment, Submission
 from .serializers import GradeSerializer, FeedbackSerializer
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
@@ -179,46 +179,84 @@ class GradeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
         )
 
-    @action(detail=False, methods=['post'], url_path='manual-grade')
-    def manual_grade(self, request):
-        """
-        Accepts manual grading input:
-        {
-          "submission": <submission_id>,
-          "manual_scores": { "<rubric_key>": true, ... }  # which rubrics selected
+  @action(detail=False, methods=['post'], url_path='manual-grade')
+  def manual_grade(self, request):
+      """
+      Accepts manual grading input:
+      {
+        "submission": <submission_id>,
+        "manual_scores": {
+          "question_index-rubric_index-rubric_name": boolean,
         }
-        """
-        data = request.data
-        submission_id = data.get('submission')
-        manual_scores = data.get('manual_scores', {})
+      }
+      """
+      data = request.data
+      submission_id = data.get('submission')
+      raw_manual_scores = data.get('manual_scores', {})
 
-        if not submission_id:
-            return Response({'error': 'submission ID is required'}, status=400)
+      if not submission_id:
+          return Response({'error': 'submission ID is required'}, status=400)
 
-        try:
-            grade = Grade.objects.get(submission_id=submission_id)
-        except Grade.DoesNotExist:
-            return Response({'error': 'Grade does not exist for this submission'}, status=404)
+      try:
+          grade = Grade.objects.get(submission_id=submission_id)
+      except Grade.DoesNotExist:
+          return Response({'error': 'Grade does not exist for this submission'}, status=404)
 
-        # For demo: assume each rubric "selected" counts as 1 point
-        # You can extend to pass rubric points if you want
-        manual_total = sum(1 for selected in manual_scores.values() if selected)
+      submission = grade.submission
+      assignment = submission.assignment
+      questions = assignment.questions  # list of question dicts
 
-        # Or better: You could accept rubric_points in the request and sum that up instead
+      # Step 1: Initialize manual_scores as { "0": [false, false, ...], ... }
+      manual_scores = {}
 
-        # Update manual rubric fields
-        grade.question_scores = manual_scores
-        grade.rubric_max_points = len(manual_scores)  # or actual max points sum you calculate
-        auto_points = grade.auto_points or 0
+      for q_index, question in enumerate(questions):
+          rubric_count = len(question.get("rubrics", []))
+          manual_scores[str(q_index)] = [False] * rubric_count
 
-        # Combine manual + autograder points
-        grade.score = auto_points + manual_total
-        grade.is_finalized = True  # Optionally finalize here or elsewhere
+      # Step 2: Fill in selected rubrics from raw_manual_scores
+      for key, selected in raw_manual_scores.items():
+          if not selected:
+              continue
+          try:
+              parts = key.split("-")
+              q_index = int(parts[0])
+              r_index = int(parts[1])
+              manual_scores[str(q_index)][r_index] = True
+          except (IndexError, ValueError, KeyError):
+              continue  # skip malformed keys
 
-        grade.save()
+      # Step 3: Compute question_scores using subtractive rubrics
+      question_scores = {}
+      manual_total = 0
 
-        serializer = self.get_serializer(grade)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+      for q_index_str, rubric_bools in manual_scores.items():
+          q_index = int(q_index_str)
+          question = questions[q_index]
+          rubrics = question.get("rubrics", [])
+          max_points = question.get("points", 0)
+
+          deductions = 0
+          for r_index, selected in enumerate(rubric_bools):
+              if selected and r_index < len(rubrics):
+                  deductions += rubrics[r_index].get("points", 0)
+
+          earned = max(max_points - deductions, 0)
+          question_scores[q_index_str] = {
+              "earned": earned,
+              "max": max_points
+          }
+          manual_total += earned
+
+      # Save rubric selections + computed scores
+      grade.question_scores = question_scores
+      grade.rubric_max_points = sum(q.get("points", 0) for q in questions)
+      auto_points = grade.auto_points or 0
+      grade.score = auto_points + manual_total
+      grade.is_finalized = True
+      grade.save()
+
+      serializer = self.get_serializer(grade)
+      return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="gradebook")
     def gradebook(self, request):
@@ -226,10 +264,24 @@ class GradeViewSet(viewsets.ModelViewSet):
         if not course_id:
             return Response({"error": "course_id is required"}, status=400)
 
-        grades = Grade.objects.filter(submission__assignment__course_id=course_id)
-        serializer = self.get_serializer(grades, many=True)
-        return Response(serializer.data)
+        assignments = Assignment.objects.filter(course_id=course_id)
+        result = []
 
+        for assignment in assignments:
+            grades = Grade.objects.filter(submission__assignment=assignment)
+
+            grade_dict = {}
+            for grade in grades:
+                student_name = grade.submission.student.name
+                score = f"{grade.score or 0}/{(grade.auto_max_points + grade.rubric_max_points) or 0}"
+                grade_dict[student_name] = score
+
+            result.append({
+                "assignment": assignment.name,
+                "grades": grade_dict
+            })
+
+        return Response(result)
 
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),

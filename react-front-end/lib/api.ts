@@ -159,6 +159,11 @@ export const apiFunctions = {
     return response.data;
   },
 
+  getGradebook: async (courseId: number): Promise<Grade[]> => {
+    const response = await api.get<Grade[]>(`/grading-grades/gradebook/?course_id=${courseId}`);
+    return response.data;
+  },
+
   checkCourse: async (courseCode: string): Promise<Course> => {
     const response = await api.get<Course>('/courses/by-code/', {
       params: { code: courseCode }

@@ -7,6 +7,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth import login
 from .serializers import UserSerializer, AuthStatusSerializer, LoginSerializer
+from django.contrib.auth.hashers import make_password  # ✅ required for password hashing
+
 
 @extend_schema(
     description="Check if user is authenticated",
@@ -20,26 +22,25 @@ def auth_status(request):
     Check if user is authenticated
     """
     if request.user.is_authenticated:
-        # Return user data
         return Response({
             'is_authenticated': True,
             'user': {
                 'id': request.user.id,
                 'username': request.user.username,
                 'email': request.user.email,
-                # TODO Add other user fields later if we want
             }
         })
     else:
         return Response({
             'is_authenticated': False
         })
+
+
 @extend_schema(
     description="Get user details by email",
     responses={200: UserSerializer},
     tags=["accounts"]
 )
-
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_user_by_email(request):
@@ -64,6 +65,7 @@ def get_user_by_email(request):
         })
     except User.DoesNotExist:
         return Response({'error': 'User not found.'}, status=404)
+
 
 @extend_schema(
     description="Get details of the currently authenticated user",
@@ -90,26 +92,8 @@ def current_user(request):
         'email': user.email,
         'is_staff': user.is_staff,
     }
-    
-    # Add student info if available
-    #if hasattr(user, 'student_profile') and user.student_profile.exists():
-    #    student = user.student_profile
-    #    data['student'] = {
-    #        'id': student.id,
-    #        'name': student.name,
-    #        'student_id': student.student_id,
-    #    }
-    
-    # Add instructor info if available
-    #if hasattr(user, 'instructor_profile') and user.instructor_profile.exists():
-    #    instructor = user.instructor_profile
-    #    data['instructor'] = {
-    #        'id': instructor.id,
-    #        'name': instructor.name,
-    #        'instructor_id': instructor.instructor_id,
-    #    }
-    
     return Response(data)
+
 
 @extend_schema(
     description="Login with email/username and password to get user details and role information",
@@ -127,18 +111,18 @@ def current_user(request):
         200: {
             'type': 'object',
             'properties': {
-                'success': {'type': 'boolean', 'description': 'Whether the login was successful'},
+                'success': {'type': 'boolean'},
                 'user': {
                     'type': 'object',
                     'properties': {
-                        'id': {'type': 'integer', 'description': 'User ID'},
-                        'username': {'type': 'string', 'description': 'Username'},
-                        'email': {'type': 'string', 'format': 'email', 'description': 'User email'},
-                        'is_student': {'type': 'boolean', 'description': 'Whether the user is a student'},
-                        'is_instructor': {'type': 'boolean', 'description': 'Whether the user is an instructor'},
-                        'student_id': {'type': 'string', 'nullable': True, 'description': 'Student ID if user is a student'},
-                        'instructor_id': {'type': 'string', 'nullable': True, 'description': 'Instructor ID if user is an instructor'},
-                        'preferred_name': {'type': 'string', 'nullable': True, 'description': 'User\'s preferred display name'}
+                        'id': {'type': 'integer'},
+                        'username': {'type': 'string'},
+                        'email': {'type': 'string', 'format': 'email'},
+                        'is_student': {'type': 'boolean'},
+                        'is_instructor': {'type': 'boolean'},
+                        'student_id': {'type': 'string', 'nullable': True},
+                        'instructor_id': {'type': 'string', 'nullable': True},
+                        'preferred_name': {'type': 'string', 'nullable': True}
                     }
                 }
             }
@@ -146,11 +130,8 @@ def current_user(request):
         400: {
             'type': 'object',
             'properties': {
-                'success': {'type': 'boolean', 'description': 'Always false for errors'},
-                'error': {
-                    'type': 'object',
-                    'description': 'Validation errors or login failure details'
-                }
+                'success': {'type': 'boolean'},
+                'error': {'type': 'object'}
             }
         }
     },
@@ -163,25 +144,11 @@ def login_user(request):
     Login user with email/username and password
     """
     serializer = LoginSerializer(data=request.data)
-    
+
     if serializer.is_valid():
         user = serializer.validated_data['user']
         login(request, user)
-        
-        # Get student/instructor IDs if they exist
-        #student_id = None
-        #instructor_id = None
-        
-        #if user.is_student and hasattr(user, 'student_profile'):
-        #    student = user.student_profile
-        #    if student:
-        #        student_id = student.student_id
-                
-        #if user.is_instructor and hasattr(user, 'instructor_profile'):
-        #    instructor = user.instructor_profile
-        #    if instructor:
-        #        instructor_id = instructor.instructor_id
-        
+
         return Response({
             'success': True,
             'user': {
@@ -191,11 +158,12 @@ def login_user(request):
                 'preferred_name': user.preferred_name
             }
         })
-    
+
     return Response({
         'success': False,
         'error': serializer.errors
     }, status=400)
+
 
 @extend_schema(
     description="Logs out the user by blacklisting the refresh token",
@@ -223,3 +191,69 @@ class LogoutView(APIView):
             return Response({"detail": "Logged out successfully."}, status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
+
+# ✅ FIXED: Update User Settings API to accept user_id from URL
+@extend_schema(
+    description="Update name, preferred name, or password for authenticated user",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'name': {'type': 'string', 'description': 'New username'},
+                'preferred_name': {'type': 'string', 'description': 'New preferred display name'},
+                'password': {'type': 'string', 'description': 'New password'}
+            }
+        }
+    },
+    responses={200: {'type': 'object', 'properties': {'detail': {'type': 'string'}}}},
+    tags=["accounts"]
+)
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_user_settings(request, user_id):
+    print("REQUEST", request)
+    print("REQUEST DATA", request.data)
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({'detail': 'User not found'}, status=404)
+
+    if request.user != user and not request.user.is_staff:
+        return Response({'detail': 'Permission denied'}, status=403)
+
+    data = request.data
+    updated = False
+
+    new_name = data.get("name")
+    if new_name and new_name != user.username:
+        user.username = new_name
+        updated = True
+
+    new_preferred = data.get("preferred_name")
+    if new_preferred is not None and new_preferred != user.preferred_name:
+        user.preferred_name = new_preferred
+        updated = True
+
+    new_password = data.get("password")
+    if new_password:
+        user.password = make_password(new_password)
+        updated = True
+
+    if updated:
+        user.save()
+        return Response({
+           'detail': 'Settings updated successfully',
+           'user': {
+              'id': user.id,
+              'username': user.username,
+              'email': user.email,
+              'preferred_name': user.preferred_name
+           }
+        }, status=200)
+    else:
+        return Response({'detail': 'No changes made'}, status=200)

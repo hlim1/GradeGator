@@ -365,6 +365,25 @@ export const apiFunctions = {
   });
   return res.data;
  },
+ 
+ updateUserSettings: async (userId: number, data: { name?: string; preferred_name?: string; password?: string }) => {
+    const token = localStorage.getItem("accessToken");
 
+    const response = await fetch(`http://18.188.140.218:8000/api/users/${userId}/update-settings/`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to update settings");
+    }
+
+    return await response.json(); // optional, depends on your backend response
+  },
 };
 export default api;

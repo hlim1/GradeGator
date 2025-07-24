@@ -37,6 +37,8 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
+  const [students, setStudents] = useState([]);
+  const [grades, setGrades] = useState([]); // contains { studentId, assignmentId, score }
   const router = useRouter();
   const params = useParams();
   const courseId = params.courseId as string;
@@ -76,6 +78,23 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
       setAssignments(prev => [...prev, newAssignment]);
     }
   }, [assignmentData, course.id]);
+
+  useEffect(() => {
+    const fetchGradebookData = async () => {
+      try {
+        const studentsRes = await apiFunctions.getCourseStudents(courseId);
+        const gradesRes = await apiFunctions.getGradebook(courseId); // You'll need to implement this
+        setStudents(studentsRes);
+        setGrades(gradesRes);
+      } catch (err) {
+        console.error('Error loading gradebook:', err);
+      }
+    };
+
+    if (activeTab === 'gradebook') {
+      fetchGradebookData();
+    }
+  }, [activeTab, courseId]);
 
   const filteredAssignments = assignments.filter(assignment => {
     const matchesSearch = assignment.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -257,9 +276,33 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
         );
       case 'gradebook':
         return (
-          <div className="p-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Grade Book</h2>
-            <p className="text-gray-600 mt-2">Grade book content coming soon...</p>
+          <div className="overflow-auto">
+            <h2 className="text-2xl font-bold mb-4">Grade Book</h2>
+            <table className="min-w-full table-auto border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-4 py-2 text-left">Student</th>
+                  {assignments.map(a => (
+                    <th key={a.id} className="border px-4 py-2 text-left">{a.name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {students.map(student => (
+                  <tr key={student.id}>
+                    <td className="border px-4 py-2">{student.name}</td>
+                    {assignments.map(assignment => {
+                      const submission = grades.find(g => g.studentId === student.id && g.assignmentId === assignment.id);
+                      return (
+                        <td key={assignment.id} className="border px-4 py-2">
+                          {submission ? `${submission.score}/${assignment.points}` : '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
       case 'roster':

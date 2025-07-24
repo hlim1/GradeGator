@@ -179,84 +179,84 @@ class GradeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
         )
 
-  @action(detail=False, methods=['post'], url_path='manual-grade')
-  def manual_grade(self, request):
-      """
-      Accepts manual grading input:
-      {
-        "submission": <submission_id>,
-        "manual_scores": {
-          "question_index-rubric_index-rubric_name": boolean,
-        }
-      }
-      """
-      data = request.data
-      submission_id = data.get('submission')
-      raw_manual_scores = data.get('manual_scores', {})
-
-      if not submission_id:
-          return Response({'error': 'submission ID is required'}, status=400)
-
-      try:
-          grade = Grade.objects.get(submission_id=submission_id)
-      except Grade.DoesNotExist:
-          return Response({'error': 'Grade does not exist for this submission'}, status=404)
-
-      submission = grade.submission
-      assignment = submission.assignment
-      questions = assignment.questions  # list of question dicts
-
-      # Step 1: Initialize manual_scores as { "0": [false, false, ...], ... }
-      manual_scores = {}
-
-      for q_index, question in enumerate(questions):
-          rubric_count = len(question.get("rubrics", []))
-          manual_scores[str(q_index)] = [False] * rubric_count
-
-      # Step 2: Fill in selected rubrics from raw_manual_scores
-      for key, selected in raw_manual_scores.items():
-          if not selected:
-              continue
-          try:
-              parts = key.split("-")
-              q_index = int(parts[0])
-              r_index = int(parts[1])
-              manual_scores[str(q_index)][r_index] = True
-          except (IndexError, ValueError, KeyError):
-              continue  # skip malformed keys
-
-      # Step 3: Compute question_scores using subtractive rubrics
-      question_scores = {}
-      manual_total = 0
-
-      for q_index_str, rubric_bools in manual_scores.items():
-          q_index = int(q_index_str)
-          question = questions[q_index]
-          rubrics = question.get("rubrics", [])
-          max_points = question.get("points", 0)
-
-          deductions = 0
-          for r_index, selected in enumerate(rubric_bools):
-              if selected and r_index < len(rubrics):
-                  deductions += rubrics[r_index].get("points", 0)
-
-          earned = max(max_points - deductions, 0)
-          question_scores[q_index_str] = {
-              "earned": earned,
-              "max": max_points
+    @action(detail=False, methods=['post'], url_path='manual-grade')
+    def manual_grade(self, request):
+        """
+        Accepts manual grading input:
+        {
+          "submission": <submission_id>,
+          "manual_scores": {
+            "question_index-rubric_index-rubric_name": boolean,
           }
-          manual_total += earned
+        }
+        """
+        data = request.data
+        submission_id = data.get('submission')
+        raw_manual_scores = data.get('manual_scores', {})
 
-      # Save rubric selections + computed scores
-      grade.question_scores = question_scores
-      grade.rubric_max_points = sum(q.get("points", 0) for q in questions)
-      auto_points = grade.auto_points or 0
-      grade.score = auto_points + manual_total
-      grade.is_finalized = True
-      grade.save()
+        if not submission_id:
+            return Response({'error': 'submission ID is required'}, status=400)
 
-      serializer = self.get_serializer(grade)
-      return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            grade = Grade.objects.get(submission_id=submission_id)
+        except Grade.DoesNotExist:
+            return Response({'error': 'Grade does not exist for this submission'}, status=404)
+
+        submission = grade.submission
+        assignment = submission.assignment
+        questions = assignment.questions  # list of question dicts
+
+        # Step 1: Initialize manual_scores as { "0": [false, false, ...], ... }
+        manual_scores = {}
+
+        for q_index, question in enumerate(questions):
+            rubric_count = len(question.get("rubrics", []))
+            manual_scores[str(q_index)] = [False] * rubric_count
+
+        # Step 2: Fill in selected rubrics from raw_manual_scores
+        for key, selected in raw_manual_scores.items():
+            if not selected:
+                continue
+            try:
+                parts = key.split("-")
+                q_index = int(parts[0])
+                r_index = int(parts[1])
+                manual_scores[str(q_index)][r_index] = True
+            except (IndexError, ValueError, KeyError):
+                continue  # skip malformed keys
+
+        # Step 3: Compute question_scores using subtractive rubrics
+        question_scores = {}
+        manual_total = 0
+
+        for q_index_str, rubric_bools in manual_scores.items():
+            q_index = int(q_index_str)
+            question = questions[q_index]
+            rubrics = question.get("rubrics", [])
+            max_points = question.get("points", 0)
+
+            deductions = 0
+            for r_index, selected in enumerate(rubric_bools):
+                if selected and r_index < len(rubrics):
+                    deductions += rubrics[r_index].get("points", 0)
+
+            earned = max(max_points - deductions, 0)
+            question_scores[q_index_str] = {
+                "earned": earned,
+                "max": max_points
+            }
+            manual_total += earned
+
+        # Save rubric selections + computed scores
+        grade.question_scores = question_scores
+        grade.rubric_max_points = sum(q.get("points", 0) for q in questions)
+        auto_points = grade.auto_points or 0
+        grade.score = auto_points + manual_total
+        grade.is_finalized = True
+        grade.save()
+
+        serializer = self.get_serializer(grade)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="gradebook")
     def gradebook(self, request):
@@ -282,6 +282,23 @@ class GradeViewSet(viewsets.ModelViewSet):
             })
 
         return Response(result)
+
+    @action(detail=False, methods=["get"], url_path="by-submission")
+    def get_by_submission(self, request):
+        """
+        GET /api/grades/by-submission/?submission=<submission_id>
+        """
+        submission_id = request.query_params.get("submission")
+        if not submission_id:
+            return Response({"error": "submission parameter is required"}, status=400)
+
+        try:
+            grade = Grade.objects.get(submission__id=submission_id)
+        except Grade.DoesNotExist:
+            return Response({"error": "Grade not found"}, status=404)
+
+        serializer = self.get_serializer(grade)
+        return Response(serializer.data, status=200)
 
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),

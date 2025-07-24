@@ -164,6 +164,13 @@ export const apiFunctions = {
     return response.data;
   },
 
+  getGradeBySubmissionId: async (submissionId: number): Promise<Grade> => {
+    const response = await api.get<Grade>('/grades/by-submission/', {
+      params: { submission: submissionId }
+    });
+    return response.data;
+  },
+
   checkCourse: async (courseCode: string): Promise<Course> => {
     const response = await api.get<Course>('/courses/by-code/', {
       params: { code: courseCode }

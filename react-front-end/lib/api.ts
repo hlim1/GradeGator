@@ -159,8 +159,8 @@ export const apiFunctions = {
     return response.data;
   },
 
-  getGradebook: async (courseId: number): Promise<Grade[]> => {
-    const response = await api.get<Grade[]>(`/grading-grades/gradebook/?course_id=${courseId}`);
+  getGradebook: async (courseId: number): Promise<any> => {
+    const response = await api.get(`/grades/gradebook/?course_id=${courseId}`);
     return response.data;
   },
 

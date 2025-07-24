@@ -91,8 +91,8 @@ const CreateAssignment = () => {
           rubrics: rubric.map(r => ({
             description: r.description,
             points: parseFloat(r.points || '0'),
-            add: true,
-            subtract: false,
+            add: false,
+            subtract: true,
           }))
         };
 

@@ -19,6 +19,7 @@ const CreateAssignment = () => {
   const [allowLateSubmissions, setAllowLateSubmissions] = useState(false);
   const [enableGroup, setEnableGroup] = useState(false);
   const [rubric, setRubric] = useState<{ description: string; points: string }[]>([]);
+  const [creating, setCreating] = useState(false);
 
   const addRubricItem = () => {
     setRubric([...rubric, { description: "", points: "" }]);
@@ -58,6 +59,8 @@ const CreateAssignment = () => {
       alert("Please enter a due date");
       return;
     }
+
+    setCreating(true);
 
     try {
       const shortId = Date.now().toString(36).slice(-6);
@@ -131,6 +134,8 @@ const CreateAssignment = () => {
       } else {
         alert(`Error: ${error.message}`);
       }
+    } finally {
+      setCreating(false); // <-- Re-enable button after done
     }
   };
 
@@ -301,11 +306,13 @@ const CreateAssignment = () => {
         </div>
       </div>
 
-      <button 
+      <button
         onClick={handleNext}
-        className="mt-6 w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700"
+        disabled={creating}  // disable button while creating
+        className={`mt-6 w-full py-2 rounded-md text-white 
+          ${creating ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
       >
-        Next
+        {creating ? "Creating..." : "Next"}
       </button>
     </div>
   );

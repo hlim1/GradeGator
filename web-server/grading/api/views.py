@@ -181,15 +181,6 @@ class GradeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='manual-grade')
     def manual_grade(self, request):
-        """
-        Accepts manual grading input:
-        {
-          "submission": <submission_id>,
-          "manual_scores": {
-            "question_index-rubric_index-rubric_name": boolean,
-          }
-        }
-        """
         data = request.data
         submission_id = data.get('submission')
         raw_manual_scores = data.get('manual_scores', {})
@@ -206,48 +197,37 @@ class GradeViewSet(viewsets.ModelViewSet):
         assignment = submission.assignment
         questions = assignment.questions  # list of question dicts
 
-        # Step 1: Initialize manual_scores as { "0": [false, false, ...], ... }
-        manual_scores = {}
-
-        for q_index, question in enumerate(questions):
-            rubric_count = len(question.get("rubrics", []))
-            manual_scores[str(q_index)] = [False] * rubric_count
-
-        # Step 2: Fill in selected rubrics from raw_manual_scores
-        for key, selected in raw_manual_scores.items():
-            if not selected:
-                continue
-            try:
-                parts = key.split("-")
-                q_index = int(parts[0])
-                r_index = int(parts[1])
-                manual_scores[str(q_index)][r_index] = True
-            except (IndexError, ValueError, KeyError):
-                continue  # skip malformed keys
-
-        # Step 3: Compute question_scores using subtractive rubrics
         question_scores = {}
         manual_total = 0
 
-        for q_index_str, rubric_bools in manual_scores.items():
-            q_index = int(q_index_str)
-            question = questions[q_index]
+        for q_index, question in enumerate(questions):
             rubrics = question.get("rubrics", [])
             max_points = question.get("points", 0)
-
             deductions = 0
-            for r_index, selected in enumerate(rubric_bools):
-                if selected and r_index < len(rubrics):
-                    deductions += rubrics[r_index].get("points", 0)
+            rubric_results = []
+
+            for r_index, rubric in enumerate(rubrics):
+                description = rubric.get("description", "")
+                rubric_key = f"{q_index}-{r_index}-{description}"
+                awarded = raw_manual_scores.get(rubric_key, False)
+                if awarded:
+                    deductions += rubric.get("points", 0)
+
+                rubric_results.append({
+                    "description": description,
+                    "points": rubric.get("points", 0),
+                    "awarded": awarded
+                })
 
             earned = max(max_points - deductions, 0)
-            question_scores[q_index_str] = {
-                "earned": earned,
-                "max": max_points
-            }
             manual_total += earned
 
-        # Save rubric selections + computed scores
+            question_scores[str(q_index)] = {
+                "earned": earned,
+                "max": max_points,
+                "rubrics": rubric_results
+            }
+
         grade.question_scores = question_scores
         grade.rubric_max_points = sum(q.get("points", 0) for q in questions)
         auto_points = grade.auto_points or 0

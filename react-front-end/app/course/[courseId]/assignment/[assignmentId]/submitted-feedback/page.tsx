@@ -51,7 +51,8 @@ export default function SubmittedFeedbackPage() {
   const [assignmentName, setAssignmentName] = useState<string | null>(null);
   const [isManuallyGraded, setIsManuallyGraded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [rubricScores, setRubricScores] = useState<QuestionScores>({});~
+  const [rubricScores, setRubricScores] = useState<QuestionScores>({});
+  const [gradingStatus, setGradingStatus] = useState<string | null>(null);
 
   // Initialize ids and session info once on mount
   useEffect(() => {
@@ -91,6 +92,7 @@ export default function SubmittedFeedbackPage() {
         const assignmentData = await apiFunctions.getAssignment(assignmentId);
         setAssignment(assignmentData);
         console.log("User Id being used for submission fetch",userId);
+        setGradingStatus(assignmentData.status);
         const submissionId = await apiFunctions.getSubmissionId(assignmentId, userId);
         const res = await apiFunctions.getGradingResults(submissionId);
         console.log('Grading results:', res);
@@ -297,9 +299,11 @@ export default function SubmittedFeedbackPage() {
             <div className="border rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-semibold text-gray-700">Manual Feedback</h2>
-                <div className="font-semibold text-gray-700">
-                  Total: {manualScores.totalEarned} / {manualScores.totalMax}
-                </div>
+                {gradingStatus === 'graded' && (
+                  <div className="font-semibold text-gray-700">
+                    Total: {manualScores.totalEarned} / {manualScores.totalMax}
+                  </div>
+                )}
               </div>
               {isManuallyGraded ? (
                   <div>

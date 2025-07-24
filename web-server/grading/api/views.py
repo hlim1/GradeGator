@@ -220,6 +220,17 @@ class GradeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(grade)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=["get"], url_path="gradebook")
+    def gradebook(self, request):
+        course_id = request.query_params.get("course_id")
+        if not course_id:
+            return Response({"error": "course_id is required"}, status=400)
+
+        grades = Grade.objects.filter(submission__assignment__course_id=course_id)
+        serializer = self.get_serializer(grades, many=True)
+        return Response(serializer.data)
+
+
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),
     create=extend_schema(description="Create a new feedback item"),

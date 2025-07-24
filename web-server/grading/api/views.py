@@ -6,7 +6,7 @@ from grading.models import Grade, Feedback
 from assignments.models import Submission
 from .serializers import GradeSerializer, FeedbackSerializer
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework import viewsets, status
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django.utils.timezone import now
@@ -27,7 +27,7 @@ class GradeViewSet(viewsets.ModelViewSet):
     """
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def list(self, request, *args, **kwargs):
         submission_id = request.query_params.get('submission')
@@ -45,12 +45,17 @@ class GradeViewSet(viewsets.ModelViewSet):
             return super().list(request, *args, **kwargs)
 
     def initialize_request(self, request, *args, **kwargs):
-        django_request = super().initialize_request(request, *args, **kwargs)
-        if django_request.FILES:
-            print("🔥 FILES detected BEFORE create()")
-            for name, file in django_request.FILES.items():
-                print(f"File name: {file.name}, size: {file.size}, content_type: {file.content_type}")
-        return django_request
+        # Only check files if multipart/form-data
+        if request.content_type.startswith('multipart'):
+            django_request = super().initialize_request(request, *args, **kwargs)
+            if django_request.FILES:
+                print("🔥 FILES detected BEFORE create()")
+                for name, file in django_request.FILES.items():
+                    print(f"File name: {file.name}, size: {file.size}, content_type: {file.content_type}")
+            return django_request
+        else:
+            # For JSON requests just parse normally without checking files
+            return super().initialize_request(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -174,6 +179,47 @@ class GradeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
         )
 
+    @action(detail=False, methods=['post'], url_path='manual-grade')
+    def manual_grade(self, request):
+        """
+        Accepts manual grading input:
+        {
+          "submission": <submission_id>,
+          "manual_scores": { "<rubric_key>": true, ... }  # which rubrics selected
+        }
+        """
+        data = request.data
+        submission_id = data.get('submission')
+        manual_scores = data.get('manual_scores', {})
+
+        if not submission_id:
+            return Response({'error': 'submission ID is required'}, status=400)
+
+        try:
+            grade = Grade.objects.get(submission_id=submission_id)
+        except Grade.DoesNotExist:
+            return Response({'error': 'Grade does not exist for this submission'}, status=404)
+
+        # For demo: assume each rubric "selected" counts as 1 point
+        # You can extend to pass rubric points if you want
+        manual_total = sum(1 for selected in manual_scores.values() if selected)
+
+        # Or better: You could accept rubric_points in the request and sum that up instead
+
+        # Update manual rubric fields
+        grade.question_scores = manual_scores
+        grade.rubric_max_points = len(manual_scores)  # or actual max points sum you calculate
+        auto_points = grade.auto_points or 0
+
+        # Combine manual + autograder points
+        grade.score = auto_points + manual_total
+        grade.is_finalized = True  # Optionally finalize here or elsewhere
+
+        grade.save()
+
+        serializer = self.get_serializer(grade)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 @extend_schema_view(
     list=extend_schema(description="List all feedback items"),
     create=extend_schema(description="Create a new feedback item"),
@@ -189,37 +235,3 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     """
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
-
-    @action(detail=False, methods=['post'], url_path='update-scores')
-    def update_scores(self, request):
-        data = request.data
-
-        for item in data:
-            grade_id = item.get('grade_id')
-            score = item.get('score')
-            comment = item.get('comment', '')
-            position = item.get('position')
-
-            if grade_id is None or score is None:
-                return Response({"error": "grade_id and score are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-            try:
-                grade = Grade.objects.get(id=grade_id)
-                grade.score = score  # This is your manual score field
-                grade.save()
-
-                # Only create feedback if there's a comment
-                if comment.strip() != "":
-                    Feedback.objects.create(
-                        comment=comment,
-                        position=position,
-                        created_at=now(),
-                        grade=grade,
-                        acknowledged_by_student=False,  # default assumption
-                        metadata={},  # fill this out later as needed
-                    )
-
-            except Grade.DoesNotExist:
-                return Response({"error": f"Grade with id {grade_id} not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        return Response({"message": "Manual scores and feedback updated successfully."}, status=status.HTTP_200_OK)

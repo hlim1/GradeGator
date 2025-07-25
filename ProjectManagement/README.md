@@ -153,3 +153,5 @@
   - Send an automated email to the user added to the course.
     - Need to modify the user creation and addition logic.
   - Rubric handling, i.e., students can view, and instructors/TAs can manually grade.
+- Finalize any remaining TODOs that can be easily done.
+- In the daily summary for July 25, list all the working functionalities of GradeGator. 

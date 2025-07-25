@@ -5,6 +5,7 @@ import { apiFunctions } from '@/lib/api';
 import UserEditModal from '@/components/UserEditModal';
 import AddUserModal from '@/components/AddUserModal';
 import { Button } from '@/components/ui/button';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 export default function RosterPage({ courseId }: { courseId: string }) {
   const [roster, setRoster] = useState<any[]>([]);
@@ -27,7 +28,7 @@ export default function RosterPage({ courseId }: { courseId: string }) {
         ];
         setRoster(flat);
 
-        const loggedId = Number(sessionStorage.getItem('user_id'));
+        const loggedId = Number(sessionStorage.getItem('userId'));
         setLoggedInUserId(loggedId);
         const loggedUser = flat.find((u) => u.user_id === loggedId || u.user === loggedId);
         if (loggedUser) {
@@ -56,6 +57,34 @@ export default function RosterPage({ courseId }: { courseId: string }) {
     setIsModalOpen(false);
   };
 
+  const handleRemoveUser = async (userId: number) => {
+    try {
+      await apiFunctions.leaveCourse(userId, Number(courseId));
+      setRoster((prev) => prev.filter(u => u.user_id !== userId && u.user !== userId));
+      alert('User removed successfully.');
+    } catch (err) {
+      console.error('Failed to remove user:', err);
+      alert('Failed to remove user.');
+    }
+  };
+
+  const canShowDeleteIcon = (user: any) => {
+    const userId = user.user_id || user.user;
+    const isSelf = userId === loggedInUserId;
+    if (!loggedInUserId || !loggedInUserRole) return false;
+    if (user.user_id === loggedInUserId || user.user === loggedInUserId) return false; // can't delete yourself
+
+    if (loggedInUserRole === 'owner') {
+      return true; // owners can delete anyone except themselves
+    }
+
+    if (loggedInUserRole === 'instructor') {
+      return user.role !== 'owner'; // instructors can't delete owner or themselves
+    }
+
+    return false; // TAs don't reach this page
+  };
+
   return (
     <div className="relative">
       {courseCode && (
@@ -80,17 +109,28 @@ export default function RosterPage({ courseId }: { courseId: string }) {
             {roster.map((user) => (
               <tr
                 key={`roster-${user.role}-${user.user_id || user.student_id || user.instructor_id}`}
-                className={`cursor-pointer hover:bg-gray-100 ${
-                  loggedInUserRole === 'TA' || (user.role === 'owner' && user.user_id === loggedInUserId)
-                    ? 'opacity-60 cursor-default'
-                    : ''
-                }`}
+                className="relative hover:bg-gray-100"
                 onClick={() => openModal(user)}
               >
                 <td className="px-4 py-2">{user.name}</td>
                 <td className="px-4 py-2">{user.preferred_name || '-'}</td>
                 <td className="px-4 py-2">{user.email}</td>
-                <td className="px-4 py-2 capitalize">{user.role}</td>
+                <td className="px-4 py-2 capitalize flex items-center justify-between">
+                  {user.role}
+                  {canShowDeleteIcon(user) && (
+                    <button
+                      className="ml-4 text-red-600 hover:text-red-800"
+                      onClick={(e) => {
+                        const confirm = window.confirm(`Are you sure you want to remove ${user.name} from the course?`);
+                        if (confirm) {
+                           handleRemoveUser(user.user_id || user.user);
+                        }
+                      }}
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

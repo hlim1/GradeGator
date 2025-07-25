@@ -347,6 +347,20 @@ export const apiFunctions = {
     return res.data;
   },
 
+  getUserRole: async (courseId: string) => {
+    const token = localStorage.getItem("accessToken");
+    const response = await fetch(`http://18.188.140.218:8000/api/courses/${courseId}/user-role/`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+     });
+    if (!response.ok) {
+     throw new Error("Failed to fetch user role");
+   }
+   return await response.json(); // should return { role: "TA" | "instructor" | "owner" | "student" }
+  },
+
   getInstructorDetails: async (instructorId: number): Promise<any> => {
     const response = await api.get(`/instructors/${instructorId}/`);
     return response.data;
@@ -364,6 +378,28 @@ export const apiFunctions = {
     preferred_name,
   });
   return res.data;
+ },
+
+ leaveCourse: async (
+  courseId: number,
+  userId: number,
+  role: "student" | "instructor" | "TA" | "owner" | null
+  ) => {
+  const token = localStorage.getItem("accessToken");
+  const response = await fetch(`http://18.188.140.218:8000/api/courses/${courseId}/leave/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ user_id: userId, role }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || errorData.error || "Failed to leave course");
+  }
+
+  return await response.json();
  },
  
  updateUserSettings: async (userId: number, data: { name?: string; preferred_name?: string; password?: string }) => {
@@ -386,4 +422,5 @@ export const apiFunctions = {
     return await response.json(); // optional, depends on your backend response
   },
 };
+
 export default api;

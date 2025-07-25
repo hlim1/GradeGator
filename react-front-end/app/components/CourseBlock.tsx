@@ -27,6 +27,7 @@ export default function CourseBlock({
     try {
       await apiFunctions.deleteCourse(courseId);
       alert('Course deleted successfully!');
+      window.location.reload(); // Refresh to remove from UI
     } catch (error) {
       console.error('Failed to delete course:', error);
       alert('Something went wrong.');
@@ -36,8 +37,24 @@ export default function CourseBlock({
   };
 
   const handleLeave = async () => {
-    alert('Leave course logic is not implemented yet.');
-    setShowConfirm(false);
+    try {
+      const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+      const userId = userData.id;
+
+      if (!userId || !userRole) {
+        alert('User info missing.');
+        return;
+      }
+
+      await apiFunctions.leaveCourse(courseId, userId, userRole);
+      alert('You have successfully left the course.');
+      window.location.reload(); // Refresh to update course list
+    } catch (error) {
+      console.error('Failed to leave course:', error);
+      alert('Something went wrong.');
+    } finally {
+      setShowConfirm(false);
+    }
   };
 
   const renderConfirmDialog = () => {

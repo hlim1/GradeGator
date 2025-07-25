@@ -91,9 +91,9 @@ export default function SubmittedFeedbackPage() {
       try {
         const assignmentData = await apiFunctions.getAssignment(assignmentId);
         setAssignment(assignmentData);
-        console.log("User Id being used for submission fetch",userId);
-        setGradingStatus(assignmentData.status);
         const submissionId = await apiFunctions.getSubmissionId(assignmentId, userId);
+        const fetchedSubmission = await apiFunctions.getSubmissionById(submissionId);
+        setGradingStatus(fetchedSubmission.status);
         const res = await apiFunctions.getGradingResults(submissionId);
         console.log('Grading results:', res);
 

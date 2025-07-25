@@ -9,7 +9,8 @@ import { format } from 'date-fns';
 import RosterPage from './RosterPage';
 import { useParams } from 'next/navigation';
 import Files from '../Files';
-
+import TARosterView from './TA_RosterPage';
+ 
 interface AssignmentData {
   assignmentName: string;
   autoGraderPoints: string;
@@ -43,6 +44,23 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
   const router = useRouter();
   const params = useParams();
   const courseId = params.courseId as string;
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+     const fetchUserRole = async () => {
+        try {
+         const res = await apiFunctions.getUserRole(courseId);
+         setUserRole(res?.role || null);
+        } catch (err) {
+          console.error('Failed to fetch user role:', err);
+          setUserRole(null);
+        }
+      };
+
+     if (activeTab === 'roster') {
+        fetchUserRole();
+     }
+  }, [activeTab, courseId]);
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -327,6 +345,9 @@ export default function CourseInstructorView({ course, assignmentData }: CourseI
           </div>
         );
       case 'roster':
+         if (userRole == 'TA'){
+           return <TARosterView courseId={courseId} />;
+         }
          return <RosterPage courseId={courseId} />;
       case 'files':
         return <Files />;

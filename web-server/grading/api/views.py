@@ -197,37 +197,26 @@ class GradeViewSet(viewsets.ModelViewSet):
         assignment = submission.assignment
         questions = assignment.questions  # list of question dicts
 
-        question_scores = {}
+        question_scores = {}  # This will now be the flat rubric dictionary
         manual_total = 0
 
         for q_index, question in enumerate(questions):
             rubrics = question.get("rubrics", [])
             max_points = question.get("points", 0)
             deductions = 0
-            rubric_results = []
 
             for r_index, rubric in enumerate(rubrics):
                 description = rubric.get("description", "")
-                rubric_key = f"{q_index}-{r_index}-{description}"
-                awarded = raw_manual_scores.get(rubric_key, False)
+                key = f"{q_index}-{r_index}-{description}"
+                awarded = raw_manual_scores.get(key, False)
                 if awarded:
                     deductions += rubric.get("points", 0)
-
-                rubric_results.append({
-                    "description": description,
-                    "points": rubric.get("points", 0),
-                    "awarded": awarded
-                })
+                    question_scores[key] = True  # ✅ Only include awarded rubric
 
             earned = max(max_points - deductions, 0)
             manual_total += earned
 
-            question_scores[str(q_index)] = {
-                "earned": earned,
-                "max": max_points,
-                "rubrics": rubric_results
-            }
-
+        # Save flat rubric-only scores
         grade.question_scores = question_scores
         grade.rubric_max_points = sum(q.get("points", 0) for q in questions)
         auto_points = grade.auto_points or 0

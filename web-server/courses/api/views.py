@@ -243,6 +243,39 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({"role": "student"})
 
         return Response({"error": "Not enrolled in this course"}, status=403)
+
+    @action(detail=True, methods=['post'], url_path='leave')
+    def leave_course(self, request, pk=None):
+        course = self.get_object()
+        user_id = request.data.get('user_id')
+        role = request.data.get('role')  # optional, for additional validation
+
+        if not user_id:
+            return Response({'error': 'user_id is required'}, status=400)
+
+        if role not in ['student', 'instructor', 'TA', 'owner', None]:
+            return Response({'error': 'Invalid role'}, status=400)
+
+        removed = False
+
+        if role in [None, 'instructor', 'TA', 'owner']:
+            cir = CourseInstructorRole.objects.filter(course=course, instructor__user__id=user_id).first()
+            if cir:
+                if cir.role_type == 'owner':
+                    return Response({'error': 'Owner cannot leave the course. You must delete the course.'}, status=403)
+                cir.delete()
+                removed = True
+
+        if role in [None, 'student']:
+            cs = CourseStudent.objects.filter(course=course, student__user__id=user_id).first()
+            if cs:
+                cs.delete()
+                removed = True
+
+        if removed:
+            return Response({'status': 'User has been unenrolled from the course'})
+        else:
+            return Response({'error': 'User not enrolled in this course'}, status=404)
     
     @action(detail=True, methods=['put'], url_path='update-name')
     def update_name(self, request, pk=None):

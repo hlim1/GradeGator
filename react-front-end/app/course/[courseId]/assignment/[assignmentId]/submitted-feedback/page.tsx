@@ -49,10 +49,11 @@ export default function SubmittedFeedbackPage() {
   const [userIdFromSession, setUserIdFromSession] = useState<string | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null >(null);
   const [assignmentName, setAssignmentName] = useState<string | null>(null);
-  const [isManuallyGraded, setIsManuallyGraded] = useState<string | null>(null);
+  const [isManuallyGraded, setIsManuallyGraded] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [rubricScores, setRubricScores] = useState<QuestionScores>({});
   const [gradingStatus, setGradingStatus] = useState<string | null>(null);
+  const [autograderName, setAutograderName] = useState<string | null>(null);
 
   // Initialize ids and session info once on mount
   useEffect(() => {
@@ -148,7 +149,8 @@ export default function SubmittedFeedbackPage() {
   useEffect(() => {
     if (assignment) {
       console.log('Assignment Data (updated):', assignment);
-      setIsManuallyGraded(assignment.is_manually_graded);
+      setIsManuallyGraded(Boolean(assignment.is_manually_graded));
+      setAutograderName(assignment.autograder_name ?? null);
     }
   }, [assignment]);
 
@@ -226,13 +228,24 @@ export default function SubmittedFeedbackPage() {
               Code
             </button>
           </div>
-          {!loading && !userIdFromSession && (
+          {/* Upload buttons */}
+          {!loading && !userIdFromSession && autograderName && (
             <div className="pb-2">
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 Upload Submission
+              </button>
+            </div>
+          )}
+          {!loading && !userIdFromSession && !autograderName && (
+            <div className="pb-2">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Upload PDF Submission
               </button>
             </div>
           )}
@@ -305,7 +318,7 @@ export default function SubmittedFeedbackPage() {
                   </div>
                 )}
               </div>
-              {isManuallyGraded ? (
+              {isManuallyGraded === true ? (
                   <div>
                     {assignment.questions?.map((question, questionIndex) => {
                       const questionScore = manualScores.questionScores[questionIndex] ?? 0;
@@ -355,6 +368,7 @@ export default function SubmittedFeedbackPage() {
           assignmentName={assignmentName ?? ''}
           assignmentId={parseInt(assignmentId ?? '0')}
           courseId={courseId ?? ''}
+          autograderName={autograderName ?? null}
         />
       </div>
     </div>

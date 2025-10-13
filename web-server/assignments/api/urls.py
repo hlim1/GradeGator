@@ -2,7 +2,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
-from .views import RubricUploadView
+from .views import RubricUploadView, ManualSubmissionUploadView
 
 app_name = 'assignments_api'
 
@@ -16,5 +16,4 @@ urlpatterns = [
     path('', include(router.urls)),
     path('upload/rubric/', RubricUploadView.as_view(), name='upload-rubric'),
     path('upload/manual/', ManualSubmissionUploadView.as_view(), name='manual-submission-upload'),
-]
 ]

@@ -133,6 +133,54 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 
       return super().list(request, *args, **kwargs)
 
+class ManualSubmissionUploadView(GenericAPIView):
+    parser_classes = (MultiPartParser, FormParser)
+    serializer_class = SubmissionSerializer
+
+    def post(self, request, *args, **kwargs):
+        from assignments.models import Assignment
+        from courses.models import Student
+        from submissions.storage_backends import ManualUngradedStorage  # you’ll define this
+
+        assignment_id = request.data.get("assignment")
+        student_id = request.data.get("student")
+        pdf_file = request.FILES.get("pdf_file")
+
+        if not all([assignment_id, student_id, pdf_file]):
+            return Response(
+                {"error": "Missing assignment, student, or pdf file"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check objects exist
+        try:
+            assignment = Assignment.objects.get(pk=assignment_id)
+            student = Student.objects.get(pk=student_id)
+        except Exception as e:
+            return Response({"error": f"Invalid student or assignment: {e}"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Save to manual_ungraded_submissions bucket
+        try:
+            storage = ManualUngradedStorage()
+            file_name = f"{assignment_id}_{student_id}_{pdf_file.name}"
+            file_path = storage.save(file_name, pdf_file)
+        except Exception as e:
+            return Response({"error": f"Failed to upload to S3: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Record submission in DB
+        submission = Submission.objects.create(
+            assignment=assignment,
+            student=student,
+            manual_pdf=file_path,  # assuming you have a FileField for this
+            status="manual_ungraded"
+        )
+
+        return Response({
+            "message": "Manual submission uploaded successfully",
+            "submission_id": submission.id,
+            "file_path": file_path
+        }, status=status.HTTP_201_CREATED)
+
 class SubmissionUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)
     serializer_class = SubmissionSerializer

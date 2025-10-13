@@ -140,7 +140,7 @@ class ManualSubmissionUploadView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         from assignments.models import Assignment
         from courses.models import Student
-        from submissions.storage_backends import ManualUngradedStorage  # you’ll define this
+        from grade_gator.storage_backends import ManualUngradedStorage
 
         assignment_id = request.data.get("assignment")
         student_id = request.data.get("student")
@@ -169,11 +169,12 @@ class ManualSubmissionUploadView(GenericAPIView):
 
         # Record submission in DB
         submission = Submission.objects.create(
-            assignment=assignment,
             student=student,
-            manual_pdf=file_path,  # assuming you have a FileField for this
-            status="manual_ungraded"
+            assignment=assignment,
+            submission_file=request.FILES['pdf_file'],
+            status='submitted'
         )
+
 
         return Response({
             "message": "Manual submission uploaded successfully",

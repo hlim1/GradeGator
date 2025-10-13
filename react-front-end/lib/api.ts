@@ -224,7 +224,7 @@ export const apiFunctions = {
       params: {
         course: courseId
       }
-    });
+   });
     return response.data.filter(assignment => assignment.course === courseId);
   },
 
@@ -282,6 +282,21 @@ export const apiFunctions = {
   getStudentDetails: async (studentId: number): Promise<any> => {
     const response = await api.get(`/students/${studentId}/`);
     return response.data;
+  },
+
+  uploadPdf: async (data: SubmissionRequest): Promise<any> => {
+    const formData = new FormData();
+    formData.append('pdf_file', data.pdf_file);
+    formData.append('student', data.student.toString());
+    formData.append('assignment', data.assignment.toString());
+
+    try {
+      const response = await api.post('/upload/manual/', formData);
+      return response.data;
+    } catch (error) {
+      console.error('Manual PDF upload failed:', error);
+      throw error;
+    }
   },
 
   createSubmission: async (data: SubmissionRequest): Promise<Submission> => {

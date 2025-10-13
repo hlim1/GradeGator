@@ -15,4 +15,6 @@ router.register(r'register', views.SubmissionViewSet, basename='register-user')
 urlpatterns = [
     path('', include(router.urls)),
     path('upload/rubric/', RubricUploadView.as_view(), name='upload-rubric'),
+    path('upload/manual/', ManualSubmissionUploadView.as_view(), name='manual-submission-upload'),
+]
 ]

@@ -10,9 +10,10 @@ interface UploadModalProps {
   assignmentName: string;
   assignmentId: number;
   courseId: number;
+  autograderName: string | null;
 }
 
-export default function UploadModal({ isOpen, onClose, assignmentName, assignmentId, courseId }: UploadModalProps) {
+export default function UploadModal({ isOpen, onClose, assignmentName, assignmentId, courseId, autograderName }: UploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +39,8 @@ export default function UploadModal({ isOpen, onClose, assignmentName, assignmen
       setError('Please select a file to upload');
       return;
     }
-
     if (!userId) {
-      setError('You must be logged in to submit an assignment. Please log in and try again.');
+      setError('You must be logged in.');
       return;
     }
 
@@ -48,43 +48,39 @@ export default function UploadModal({ isOpen, onClose, assignmentName, assignmen
     setError(null);
 
     try {
-      // Create submission request
-      const submissionRequest = {
-        submission_file: selectedFile,
-        student: parseInt(userId),
-        assignment: assignmentId
-      };
-      
-      // Create a submission
-      const response = await apiFunctions.uploadSubmission(submissionRequest);
-      console.log('Upload response:', response);
-      sessionStorage.setItem("courseId", courseId);
-      
-      onClose();
-      router.push(`/course/${courseId}/assignment/${assignmentId}/submitted-autograder`);
-                  
-    } catch (error: any) {
-      console.error('Error uploading file:', error);
-      console.error('Error details:', error);
-      
-      let errorMessage = 'Failed to upload file. ';
-      if (error.response?.data?.detail) {
-        errorMessage += error.response.data.detail;
-      } else if (error.response?.data) {
-        // If there are field-specific errors
-        const fieldErrors = Object.entries(error.response.data)
-          .map(([field, message]) => `${field}: ${message}`)
-          .join(', ');
-        errorMessage += fieldErrors;
+      if (!autograderName) {
+        // Use your manual PDF upload API
+        const submissionRequest = {
+          pdf_file: selectedFile,
+          student: parseInt(userId),
+          assignment: assignmentId
+        };
+        const response = await apiFunctions.uploadPdf(submissionRequest);
+        console.log('Manual upload response:', response);
       } else {
-        errorMessage += 'Please try again.';
+        // Autograded submission
+        const submissionRequest = {
+          submission_file: selectedFile,
+          student: parseInt(userId),
+          assignment: assignmentId
+        };
+        const response = await apiFunctions.uploadSubmission(submissionRequest);
+        console.log('Autograder upload response:', response);
       }
-      
-      setError(errorMessage);
+
+      sessionStorage.setItem("courseId", courseId);
+      onClose();
+      router.push(
+        `/course/${courseId}/assignment/${assignmentId}/submitted-${autograderName ? 'feedback' : 'autograder'}`
+      );
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      setError('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
   };
+
 
   // Show a message if user is not logged in
   useEffect(() => {

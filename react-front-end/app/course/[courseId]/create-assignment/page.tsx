@@ -222,26 +222,26 @@ const CreateAssignment = () => {
             }}
           />
         </div>
-
-        <div>
-          <label className="block text-sm font-medium">Late Due Date</label>
-          <input
-            type="datetime-local"
-            className="w-full mt-1 p-2 border rounded-md"
-            min={dueDate || getMinReleaseDate()}
-            value={lateDueDate}
-            onChange={(e) => {
-              const newLateDue = e.target.value;
-              if (dueDate && new Date(newLateDue) <= new Date(dueDate)) {
-                const adjusted = new Date(new Date(dueDate).getTime() + 60 * 1000);
-                setLateDueDate(adjusted.toISOString().slice(0, 16));
-              } else {
-                setLateDueDate(newLateDue);
-              }
-            }}
-          />
-        </div>
-
+        {allowLateSubmissions && (
+          <div>
+            <label className="block text-sm font-medium">Late Due Date</label>
+            <input
+              type="datetime-local"
+              className="w-full mt-1 p-2 border rounded-md"
+              min={dueDate || getMinReleaseDate()}
+              value={lateDueDate}
+              onChange={(e) => {
+                const newLateDue = e.target.value;
+                if (dueDate && new Date(newLateDue) <= new Date(dueDate)) {
+                  const adjusted = new Date(new Date(dueDate).getTime() + 60 * 1000);
+                  setLateDueDate(adjusted.toISOString().slice(0, 16));
+                } else {
+                  setLateDueDate(newLateDue);
+                }
+              }}
+            />
+          </div>
+        )}
         <div>
           <input
             type="checkbox"

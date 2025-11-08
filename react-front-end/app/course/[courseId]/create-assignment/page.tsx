@@ -19,7 +19,7 @@ const CreateAssignment = () => {
   const [allowLateSubmissions, setAllowLateSubmissions] = useState(false);
   const [enableGroup, setEnableGroup] = useState(false);
   const [rubric, setRubric] = useState<{ description: string; points: string }[]>([]);
-  const [creating, setCreating] = useState(false);
+  const [created, setCreated] = useState(false);
 
   const addRubricItem = () => {
     setRubric([...rubric, { description: "", points: "" }]);
@@ -60,7 +60,7 @@ const CreateAssignment = () => {
       return;
     }
 
-    setCreating(true);
+    setCreated(true);
 
     try {
       const shortId = Date.now().toString(36).slice(-6);
@@ -134,8 +134,6 @@ const CreateAssignment = () => {
       } else {
         alert(`Error: ${error.message}`);
       }
-    } finally {
-      setCreating(false); // <-- Re-enable button after done
     }
   };
 
@@ -308,11 +306,11 @@ const CreateAssignment = () => {
 
       <button
         onClick={handleNext}
-        disabled={creating}  // disable button while creating
+        disabled={created}  // disable button after creating
         className={`mt-6 w-full py-2 rounded-md text-white 
-          ${creating ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
+          ${created ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
       >
-        {creating ? "Creating..." : "Next"}
+        {created ? "Creating..." : "Next"}
       </button>
     </div>
   );

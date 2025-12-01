@@ -71,7 +71,7 @@ export default function UploadModal({ isOpen, onClose, assignmentName, assignmen
       sessionStorage.setItem("courseId", courseId);
       onClose();
       router.push(
-        `/course/${courseId}/assignment/${assignmentId}/submitted-${autograderName ? 'feedback' : 'autograder'}`
+        `/course/${courseId}/assignment/${assignmentId}/submitted-${autograderName ? 'autograder' : 'feedback'}`
       );
     } catch (error: any) {
       console.error('Upload failed:', error);

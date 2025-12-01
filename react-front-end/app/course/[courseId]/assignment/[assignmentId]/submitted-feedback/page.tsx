@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Assignment, apiFunctions } from '@/lib/api';
 import UploadModal from '@/app/components/UploadModal';
+import PDFViewer from '@/app/components/PDFViewer';
 
 interface TestResult {
   testName: string;
@@ -49,10 +50,11 @@ export default function SubmittedFeedbackPage() {
   const [userIdFromSession, setUserIdFromSession] = useState<string | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null >(null);
   const [assignmentName, setAssignmentName] = useState<string | null>(null);
-  const [isManuallyGraded, setIsManuallyGraded] = useState<string | null>(null);
+  const [isManuallyGraded, setIsManuallyGraded] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [rubricScores, setRubricScores] = useState<QuestionScores>({});
   const [gradingStatus, setGradingStatus] = useState<string | null>(null);
+  const [autograderName, setAutograderName] = useState<string | null>(null);
 
   // Initialize ids and session info once on mount
   useEffect(() => {
@@ -94,6 +96,18 @@ export default function SubmittedFeedbackPage() {
         const submissionId = await apiFunctions.getSubmissionId(assignmentId, userId);
         const fetchedSubmission = await apiFunctions.getSubmissionById(submissionId);
         setGradingStatus(fetchedSubmission.status);
+
+        // Extract uploaded file URLs (S3 links)
+        const uploadedFiles = fetchedSubmission.uploaded_files || [];
+
+        setSubmittedFiles(
+          uploadedFiles.map((fileObj: { file: string }) => ({
+            filename: fileObj.file.split('/').pop(),
+            url: fileObj.file,
+            code_text: '', // placeholder for PDF viewer
+          }))
+        );
+
         const res = await apiFunctions.getGradingResults(submissionId);
         console.log('Grading results:', res);
 
@@ -130,10 +144,27 @@ export default function SubmittedFeedbackPage() {
         }
 
         // Set submitted files or fallback code text
+        //if (res?.submitted_files_json) {
+        //  setSubmittedFiles(res.submitted_files_json);
+        //} else if (res?.submitted_code_text) {
+        //  setSubmittedFiles([{ filename: 'Code.java', code_text: res.submitted_code_text }]);
+        //} else {
+        //  setSubmittedFiles([]);
+        //}
         if (res?.submitted_files_json) {
-          setSubmittedFiles(res.submitted_files_json);
+          const files = Array.isArray(res.submitted_files_json)
+            ? res.submitted_files_json
+            : [res.submitted_files_json];
+
+          setSubmittedFiles(
+            files.map((f: any) => ({
+              filename: f.filename ?? f.pdf_url?.split('/').pop() ?? 'Unknown',
+              url: f.pdf_url ?? f.file ?? '',
+              code_text: f.code_text ?? '',
+            }))
+          );
         } else if (res?.submitted_code_text) {
-          setSubmittedFiles([{ filename: 'Code.java', code_text: res.submitted_code_text }]);
+          setSubmittedFiles([{ filename: 'Code.java', code_text: res.submitted_code_text, url: '' }]);
         } else {
           setSubmittedFiles([]);
         }
@@ -148,7 +179,8 @@ export default function SubmittedFeedbackPage() {
   useEffect(() => {
     if (assignment) {
       console.log('Assignment Data (updated):', assignment);
-      setIsManuallyGraded(assignment.is_manually_graded);
+      setIsManuallyGraded(Boolean(assignment.is_manually_graded));
+      setAutograderName(assignment.autograder_name ?? null);
     }
   }, [assignment]);
 
@@ -226,13 +258,24 @@ export default function SubmittedFeedbackPage() {
               Code
             </button>
           </div>
-          {!loading && !userIdFromSession && (
+          {/* Upload buttons */}
+          {!loading && !userIdFromSession && autograderName && (
             <div className="pb-2">
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 Upload Submission
+              </button>
+            </div>
+          )}
+          {!loading && !userIdFromSession && !autograderName && (
+            <div className="pb-2">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Upload PDF Submission
               </button>
             </div>
           )}
@@ -250,9 +293,15 @@ export default function SubmittedFeedbackPage() {
                     <span>{codeDropdownsOpen[file.filename] ? '▼' : '▶'} {file.filename}</span>
                   </div>
                   {codeDropdownsOpen[file.filename] && (
-                    <pre className="whitespace-pre-wrap bg-white p-4 rounded shadow max-h-[600px] overflow-y-auto text-sm text-gray-800 mt-2">
-                      {file.code_text}
-                    </pre>
+                    <>
+                      {/\.(pdf)$/i.test(file.filename || '') ? (
+                        <PDFViewer url={file.url} />
+                      ) : (
+                        <pre className="whitespace-pre-wrap bg-white p-4 rounded shadow max-h-[600px] overflow-y-auto text-sm text-gray-800 mt-2">
+                          {file.code_text || "File preview not available"}
+                        </pre>
+                      )}
+                    </>
                   )}
                 </div>
               ))
@@ -305,7 +354,7 @@ export default function SubmittedFeedbackPage() {
                   </div>
                 )}
               </div>
-              {isManuallyGraded ? (
+              {isManuallyGraded === true ? (
                   <div>
                     {assignment.questions?.map((question, questionIndex) => {
                       const questionScore = manualScores.questionScores[questionIndex] ?? 0;
@@ -355,6 +404,7 @@ export default function SubmittedFeedbackPage() {
           assignmentName={assignmentName ?? ''}
           assignmentId={parseInt(assignmentId ?? '0')}
           courseId={courseId ?? ''}
+          autograderName={autograderName ?? null}
         />
       </div>
     </div>

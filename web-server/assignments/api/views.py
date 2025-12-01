@@ -1,6 +1,8 @@
 # assignments/api/views.py
 from rest_framework import viewsets
-from assignments.models import Assignment, Submission, GradingRubric
+from assignments.models import Assignment, Submission, GradingRubric, SubmissionFile
+from courses.models import Student
+from grading.models import Grade
 from .serializers import AssignmentSerializer, SubmissionSerializer, GradingRubricSerializer
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.decorators import action
@@ -9,7 +11,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
-from grade_gator.storage_backends import ProfessorTestCasesStorage
+from grade_gator.storage_backends import ProfessorTestCasesStorage, ManualUngradedStorage, UngradedSubmissionsStorage
 import boto3
 import json
 import uuid
@@ -132,6 +134,64 @@ class SubmissionViewSet(viewsets.ModelViewSet):
           return Response(serializer.data)
 
       return super().list(request, *args, **kwargs)
+
+class ManualSubmissionUploadView(GenericAPIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        assignment_id = request.data.get("assignment")
+        student_id = request.data.get("student")
+        pdf_file = request.FILES.get("pdf_file")
+
+        if not all([assignment_id, student_id, pdf_file]):
+            return Response({"error": "Missing assignment, student, or pdf file"}, status=400)
+
+        assignment = Assignment.objects.get(pk=assignment_id)
+        student = Student.objects.get(pk=student_id)
+
+        # Create the submission first
+        submission = Submission.objects.create(
+            student=student,
+            assignment=assignment,
+            status="submitted"
+        )
+
+        # Rename file using real submission.id
+        new_name = f"{assignment.id}_{submission.id}_{student_id}_{pdf_file.name}"
+        pdf_file.name = new_name
+
+        # Save file directly with correct storage
+        pdf_storage = ManualUngradedStorage()
+
+        submission_file = SubmissionFile(submission=submission)
+        submission_file.file.storage = pdf_storage
+        submission_file.file.save(new_name, pdf_file)
+        submission_file.save()
+
+        # This will now automatically return a signed URL
+        signed_url = pdf_storage.url(submission_file.file.name)
+
+        Grade.objects.get_or_create(
+            submission=submission,
+            defaults={
+                "score": None,
+                "submitted_files_json": {
+                    "pdf_url": signed_url,
+                    "filename": new_name
+                },
+                "auto_points": 0,
+                "auto_max_points": 0,
+                "rubric_max_points": 0,
+                "question_scores": {},
+                "is_finalized": False,
+            },
+        )
+
+        return Response({
+            "message": "Manual submission uploaded successfully",
+            "submission_id": submission.id,
+            "file_path": submission_file.file.url
+        }, status=201)
 
 class SubmissionUploadView(GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)

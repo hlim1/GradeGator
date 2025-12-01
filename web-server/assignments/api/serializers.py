@@ -1,9 +1,12 @@
-# assignments/api/serializers.py 
+# assignments/api/serializers.py
 from rest_framework import serializers
 from assignments.models import Assignment, Submission, SubmissionFile, GradingRubric, StudentAccommodation
 from grading.models import Grade, Feedback
 from courses.models import Student
 from courses.api.serializers import StudentSerializer
+from grade_gator.storage_backends import UngradedSubmissionsStorage,ManualUngradedStorage
+import boto3
+from django.conf import settings
 
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,9 +17,26 @@ class AssignmentSerializer(serializers.ModelSerializer):
         }
 
 class SubmissionFileSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
     class Meta:
         model = SubmissionFile
-        fields = ['file']
+        fields = ['id', 'file', 'url']
+
+    def get_url(self, obj):
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_S3_REGION_NAME
+        )
+
+        presigned_url = s3.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': obj.file.storage.bucket_name, 'Key': obj.file.name},
+            ExpiresIn=3600  # 1 hour validity
+        )
+        return presigned_url
 
 class SubmissionSerializer(serializers.ModelSerializer):
     uploaded_files = SubmissionFileSerializer(source='submissionfile_set', many=True, read_only=True)
@@ -47,18 +67,34 @@ class SubmissionSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         files_data = validated_data.pop('files', [])
-        assignment_id = validated_data.get('assignment').id
+        assignment = validated_data.get('assignment')
+        submission_file = validated_data.pop('submission_file', None)
         student_id = validated_data.get('student').user_id
-    
+
         submission = Submission.objects.create(**validated_data)
-    
-        submission_id = submission.id
-    
+
+        autograderName = getattr(assignment, "autograder_name", None)
+
+        if autograderName:
+            storage = UngradedSubmissionsStorage()
+        else:
+            storage = ManualUngradedStorage()
+
+        if submission_file:
+            submission_file.storage = storage
+            original_name = submission_file.name
+            new_name = f"{assignment.id}_{submission.id}_{student_id}_{original_name}"
+            submission_file.name = new_name
+            submission.submission_file = submission_file
+            submission.save()
+
         for file in files_data:
+            file.storage = storage
             original_name = file.name
-            new_name = f"{assignment_id}_{submission_id}_{student_id}_{original_name}"
+            new_name = f"{assignment.id}_{submission.id}_{student_id}_{original_name}"
             file.name = new_name
             SubmissionFile.objects.create(submission=submission, file=file)
+
         return submission
 
 class GradingRubricSerializer(serializers.ModelSerializer):

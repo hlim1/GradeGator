@@ -3,7 +3,7 @@ from django.db import models
 from courses.models import Course
 from accounts.models import User
 import os
-from grade_gator.storage_backends import UngradedSubmissionsStorage, ProfessorTestCasesStorage
+from grade_gator.storage_backends import UngradedSubmissionsStorage, ManualUngradedStorage, ProfessorTestCasesStorage
 
 def submission_upload_path(instance, filename):
     assignment_id = instance.submission.assignment.id
@@ -69,12 +69,25 @@ class SubmissionFile(models.Model):
     #file = models.FileField(upload_to="student-submissions/", blank=True, null=True)
     #file = models.FileField(upload_to=submission_upload_path)
     file = models.FileField(
-        #upload_to=submission_upload_path, 
-        storage=UngradedSubmissionsStorage(),   
-        upload_to='', 
+        upload_to='',
         blank=True,
-        null=True,
+        null=True
     )
+
+    def save(self, *args, **kwargs):
+        assignment = self.submission.assignment
+        #method = getattr(assignment, "grading_method", None) or assignment.name.lower()
+        autograderName = getattr(assignment, "autograder_name", None)
+
+        # Pick bucket conditionally
+        if (autograderName != None):
+            storage =  UngradedSubmissionsStorage()
+        else:
+            storage = ManualUngradedStorage()
+
+        # Reassign storage before saving the file
+        self.file.storage = storage
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"File for {self.submission}"

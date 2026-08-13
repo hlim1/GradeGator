@@ -690,6 +690,12 @@ Developers should review the repository and open issues before beginning major c
 
 ## License
 
+GradeGator is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+Under this license, you are free to use, modify, and redistribute the software, provided that derivative works are also distributed under the GPL-3.0 and the corresponding source code is made available under the same license.
+
+See the `LICENSE` file in this repository for the full license text.
+
 ## Contact
 
 For project questions, bug reports, and development discussions, use the repository's GitHub Issues page:
